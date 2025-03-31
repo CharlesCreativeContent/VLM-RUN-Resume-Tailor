@@ -1,61 +1,85 @@
-import { pgTable, text, serial, integer, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Define resume data structure
+export interface ContactInfo {
+  name: string;
+  location: string;
+  email: string;
+  phone: string;
+  linkedin: string;
+  github: string;
+}
+
+export interface Experience {
+  title: string;
+  company: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  responsibilities: string[];
+}
+
+export interface Education {
+  degree: string;
+  institution: string;
+  years: string;
+  gpa: string;
+}
+
+export interface Skills {
+  languages: string[];
+  frameworks: string[];
+  tools: string[];
+  concepts: string[];
+}
+
+export interface Project {
+  name: string;
+  description: string[];
+}
+
+export interface ResumeData {
+  contact: ContactInfo;
+  summary: string;
+  experience: Experience[];
+  education: Education[];
+  skills: Skills;
+  projects: Project[];
+}
+
+// Define database tables
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
 });
 
+export const resumes = pgTable("resumes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  original: jsonb("original").$type<ResumeData>(),
+  tailored: jsonb("tailored").$type<ResumeData>(),
+  jobUrl: text("job_url"),
+  createdAt: text("created_at"),
+});
+
+// Define insert schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
 });
 
+export const insertResumeSchema = createInsertSchema(resumes).pick({
+  userId: true,
+  original: true,
+  tailored: true,
+  jobUrl: true,
+  createdAt: true,
+});
+
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
-
-// Define resume types for the application
-export interface ResumeData {
-  personal?: {
-    name?: string;
-    address?: string;
-    phone?: string;
-    email?: string;
-  };
-  summary?: string;
-  skills?: string[];
-  experience?: Array<{
-    title?: string;
-    company?: string;
-    period?: string;
-    details?: string[];
-  }>;
-  education?: {
-    degree?: string;
-    institution?: string;
-    period?: string;
-    gpa?: string;
-  };
-  [key: string]: any; // Allow additional sections
-}
-
-export interface TailorResumeRequest {
-  vlmApiKey: string;
-  geminiApiKey: string;
-  applicationUrl: string;
-  resumeFile: File;
-}
-
-export interface TailorResumeResponse {
-  originalResume: ResumeData;
-  tailoredResume: ResumeData;
-}
-
-// Schemas for validation
-export const tailorResumeRequestSchema = z.object({
-  vlmApiKey: z.string().min(1, "VLM Run API Key is required"),
-  geminiApiKey: z.string().min(1, "Gemini API Key is required"),
-  applicationUrl: z.string().url("Please enter a valid URL"),
-});
+export type Resume = typeof resumes.$inferSelect;
+export type InsertResume = z.infer<typeof insertResumeSchema>;
