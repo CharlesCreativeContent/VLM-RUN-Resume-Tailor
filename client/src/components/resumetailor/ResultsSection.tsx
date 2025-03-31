@@ -135,8 +135,14 @@ export function ResultsSection({ tailoredResume, onRestart }: ResultsSectionProp
             return null;
           }
           
-          // Special case for technical_skills (which should be rendered like 'skills')
-          const sectionId = key === 'technical_skills' ? 'skills' : key;
+          // Special handling for skills vs technical_skills - avoid displaying both empty skills
+          if (key === 'skills' && tailoredResume.technical_skills && 
+              typeof tailoredResume.technical_skills === 'object') {
+            return null;
+          }
+          
+          // Use the section ID directly
+          const sectionId = key;
           
           return (
             <ResumeSection

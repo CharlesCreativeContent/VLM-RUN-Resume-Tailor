@@ -1,0 +1,186 @@
+{
+  "contact_info": {
+    "full_name": "Shawn A. Charles",
+    "email": "shawncharles@protonmail.com",
+    "phone": null,
+    "address": null,
+    "linkedin": "https://shawncharles.com/linkedin",
+    "github": "https://shawncharles.com/github",
+    "portfolio": "https://shawncharles.com/",
+    "google_scholar": null
+  },
+  "summary": "Having successfully led developer advocacy initiatives and built a thriving tech community from the ground up, I am excited to use my highly technical expertise to speak to and engage a collaborative developer community as a part of your developer relations team.",
+  "education": [],
+  "work_experience": [
+    {
+      "company": null,
+      "position": null,
+      "start_date": null,
+      "end_date": null,
+      "is_current": false,
+      "responsibilities": [
+        "Leading developer advocacy efforts involving building technical tutorials and demos.",
+        "Presenting talks at meetups and conferences.",
+        "Providing live debugging help for engineers using our platform.",
+        "Facilitating technical workshops for top customers.",
+        "Resulted in a 78% increase in developer engagement within the first 30 days.",
+        "Secured 5 new company partnership opportunities and 4 direct sales leads for the sales team.",
+        "Cultivated engagement opportunities for developers from those who had never heard about the company's dev tools to expert users."
+      ],
+      "technologies": null
+    },
+    {
+      "company": null,
+      "position": null,
+      "start_date": null,
+      "end_date": null,
+      "is_current": false,
+      "responsibilities": [
+        "Building the developer community and harnessing positive sentiment for the company.",
+        "Spearheaded the growth of the social media community to over 40,000 members with weekly views exceeding 10,000.",
+        "Hosted over 300 tech events, securing 100+ sponsorships.",
+        "Drew in over 300,000 listeners.",
+        "Landing page received over 10,000 clicks per quarter.",
+        "Directly contributed to the onboarding of 40 engineering teams to SaaS product.",
+        "Succeeded in building tools to make developer lives easier and scaling developer communities."
+      ],
+      "technologies": null
+    }
+  ],
+  "technical_skills": {
+    "programming_languages": [],
+    "frameworks_libraries": [],
+    "databases": [
+      {
+        "name": "MongoDB",
+        "level": null,
+        "years_of_experience": null
+      },
+      {
+        "name": "Mongoose",
+        "level": null,
+        "years_of_experience": null
+      }
+    ],
+    "tools": [
+      {
+        "name": "Git",
+        "level": null,
+        "years_of_experience": null
+      },
+      {
+        "name": "Command-line Automation",
+        "level": null,
+        "years_of_experience": null
+      },
+      {
+        "name": "CI/CD",
+        "level": null,
+        "years_of_experience": null
+      },
+      {
+        "name": "Docker",
+        "level": null,
+        "years_of_experience": null
+      }
+    ],
+    "cloud_platforms": [
+      {
+        "name": "AWS",
+        "level": null,
+        "years_of_experience": null
+      },
+      {
+        "name": "Cloud Infrastructure",
+        "level": null,
+        "years_of_experience": null
+      }
+    ],
+    "other": [
+      {
+        "name": "ML: PyTorch",
+        "level": null,
+        "years_of_experience": null
+      },
+      {
+        "name": "ML: TensorFlow",
+        "level": null,
+        "years_of_experience": null
+      },
+      {
+        "name": "ML: NumPy",
+        "level": null,
+        "years_of_experience": null
+      },
+      {
+        "name": "APIs",
+        "level": null,
+        "years_of_experience": null
+      }
+    ]
+  },
+  "projects": [
+    {
+      "name": "Text-2-Video with BentoML",
+      "description": "Generative AI API - Open-source cloud scale model deployment in Python",
+      "technologies": null,
+      "url": null,
+      "github_url": null,
+      "start_date": null,
+      "end_date": null,
+      "role": null,
+      "key_achievements": null
+    },
+    {
+      "name": "Travcalara.org",
+      "description": "Node FullStack Application - Dream vacation application where you can plan the perfect trip",
+      "technologies": null,
+      "url": null,
+      "github_url": null,
+      "start_date": null,
+      "end_date": null,
+      "role": null,
+      "key_achievements": null
+    },
+    {
+      "name": "Rigley 2: Flappy Bug",
+      "description": "Phaser.js Application - Over 4000+ players, you are a bug trying to avoid firewalls",
+      "technologies": null,
+      "url": null,
+      "github_url": null,
+      "start_date": null,
+      "end_date": null,
+      "role": null,
+      "key_achievements": null
+    }
+  ],
+  "open_source_contributions": [],
+  "certifications": [],
+  "publications": [
+    "Events",
+    "DevRel Demystified",
+    "How Developers Use AI in their Workflow!",
+    "Being a Dev in 2024",
+    "Blog Posts",
+    "BentoML: Open Source AI Deployment",
+    "Building AI Clinic Agent",
+    "Impact of AI Assistants",
+    "Videos",
+    "Scaling AI Model Deployment",
+    "Building AI Clinic Agent",
+    "Create a scalable e-commerce site"
+  ],
+  "conferences": [
+    "AfroTech",
+    "AWS re:Invent"
+  ],
+  "languages": [],
+  "volunteer_work": [
+    "Software Engineering Instructor/Mentor - 100Devs (Jan 2021 - Nov 2024) - Remote, USA\n  Moderated a 47,000-member engineering community on Discord, developing a C# bot and to automate moderation\n  Led weekly coding workshops for 300+ developers, covering JavaScript, React, and Node.js full stack applications",
+    "Brand Ambassador/Mentor - GCode & 100 Girls in GenAI (May 2023 - Dec 2024) - Remote, USA & India\n  Provided mentorship and technical guidance for 200+ participants, helping them build real-world AI/ML applications.\n  Led hands-on AI and ML coding workshops that resulted in a 28% rise in advanced AI course enrollment.",
+    "Community Ambassador - Karat (Mar 2024 - Nov 2024) - Remote, USA\n  Designed a structured technical interview prep pipeline, leading to a 21% improvement in pass rates for candidates\n  Hosted 10+ interactive Q&A sessions with senior engineers, engaging 500+ members and platform sign-ups by 15%"
+  ],
+  "interests": [],
+  "references": null,
+  "additional_sections": null
+}

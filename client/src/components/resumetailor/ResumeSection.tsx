@@ -348,6 +348,50 @@ export function ResumeSection({ title, sectionId, content }: ResumeSectionProps)
       );
     }
     
+    if (sectionId === 'technical_skills') {
+      // Special handling for technical_skills structure from VLM Run
+      if (!content || typeof content !== 'object') {
+        return renderEmptyState();
+      }
+      
+      console.log("Rendering technical skills:", content);
+      
+      return (
+        <div className="text-sm text-gray-700">
+          <div className="space-y-3">
+            {Object.entries(content).map(([category, skills]) => {
+              // Skip if not an array or empty array
+              if (!Array.isArray(skills) || skills.length === 0) {
+                return null;
+              }
+              
+              // Format the category name
+              const formattedCategory = category
+                .replace(/_/g, ' ')
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
+              
+              return (
+                <div key={category} className="mb-2">
+                  <div className="font-medium mb-1">{formattedCategory}:</div>
+                  <ul className="list-disc pl-5 space-y-1">
+                    {skills.map((skill: any, index: number) => (
+                      <li key={index}>
+                        {typeof skill === 'object' && skill !== null
+                          ? skill.name || JSON.stringify(skill)
+                          : String(skill)}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+    
     if (sectionId === 'skills') {
       // Check if skills object is missing or has no valid arrays
       if (!content || typeof content !== 'object') {
