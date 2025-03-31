@@ -54,15 +54,16 @@ export function ResultsSection({ tailoredResume, onRestart, geminiApiKey }: Resu
 
   const askQuestionMutation = useMutation({
     mutationFn: async (data: { resume: ResumeData, question: string, geminiApiKey: string }) => {
-      return apiRequest("POST", '/api/resume/question', data);
+      const response = await apiRequest("POST", '/api/resume/question', data);
+      return response.json(); // Parse the JSON from the response
     },
     onSuccess: (data: any) => {
       // Log the response to help debug
       console.log("Question answer received:", data);
-      console.log("Answer content:", data?.answer);
       
       // Process the answer for display
       if (data && typeof data.answer === 'string' && data.answer.trim()) {
+        console.log("Setting answer:", data.answer.substring(0, 50) + "...");
         setAnswer(data.answer.trim());
       } else {
         setAnswer("No answer was generated. Please try another question.");
