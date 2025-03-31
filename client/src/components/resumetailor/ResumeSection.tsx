@@ -39,20 +39,18 @@ export function ResumeSection({ title, sectionId, content }: ResumeSectionProps)
       textToCopy = content.trim();
     } else if (sectionId === 'contact') {
       const contact = content as any;
-      const contactLines = [];
+      const contactLines: string[] = [];
       
-      if (contact.name) contactLines.push(contact.name);
-      if (contact.location) contactLines.push(contact.location);
-      
-      const contactInfo = [];
-      if (contact.email) contactInfo.push(contact.email);
-      if (contact.phone) contactInfo.push(contact.phone);
-      if (contactInfo.length > 0) contactLines.push(contactInfo.join(' | '));
-      
-      const links = [];
-      if (contact.linkedin) links.push(contact.linkedin);
-      if (contact.github) links.push(contact.github);
-      if (links.length > 0) contactLines.push(links.join(' | '));
+      // Format each contact field on its own line
+      Object.entries(contact).forEach(([key, value]) => {
+        if (value) {
+          // Format the label from camelCase to Title Case
+          const formattedLabel = key.replace(/([A-Z])/g, ' $1')
+            .replace(/^./, str => str.toUpperCase());
+          
+          contactLines.push(`${formattedLabel}: ${value}`);
+        }
+      });
       
       textToCopy = contactLines.join('\n');
     } else if (sectionId === 'experience') {
@@ -104,23 +102,29 @@ export function ResumeSection({ title, sectionId, content }: ResumeSectionProps)
       }
     } else if (sectionId === 'skills') {
       const skills = content as any;
-      const skillLines = [];
+      const skillLines: string[] = [];
       
-      if (Array.isArray(skills.languages) && skills.languages.length > 0) {
-        skillLines.push(`Languages: ${skills.languages.join(', ')}`);
-      }
+      // Mapping of category keys to display names
+      const categoryLabels = {
+        languages: 'Languages',
+        frameworks: 'Frameworks/Libraries',
+        tools: 'Tools',
+        concepts: 'Concepts'
+      };
       
-      if (Array.isArray(skills.frameworks) && skills.frameworks.length > 0) {
-        skillLines.push(`Frameworks/Libraries: ${skills.frameworks.join(', ')}`);
-      }
-      
-      if (Array.isArray(skills.tools) && skills.tools.length > 0) {
-        skillLines.push(`Tools: ${skills.tools.join(', ')}`);
-      }
-      
-      if (Array.isArray(skills.concepts) && skills.concepts.length > 0) {
-        skillLines.push(`Concepts: ${skills.concepts.join(', ')}`);
-      }
+      // Iterate through all properties in the skills object
+      Object.entries(skills).forEach(([category, skillArray]) => {
+        // Skip if not an array or empty array
+        if (!Array.isArray(skillArray) || skillArray.length === 0) {
+          return;
+        }
+        
+        // Get the display name for this category or use the category key with first letter capitalized
+        const categoryLabel = categoryLabels[category as keyof typeof categoryLabels] || 
+          category.charAt(0).toUpperCase() + category.slice(1);
+        
+        skillLines.push(`${categoryLabel}: ${skillArray.join(', ')}`);
+      });
       
       textToCopy = skillLines.join('\n');
     } else if (sectionId === 'projects') {
@@ -258,28 +262,24 @@ export function ResumeSection({ title, sectionId, content }: ResumeSectionProps)
         
       if (allEmpty) return renderEmptyState();
       
+      // Render each contact field as a separate entry
       return (
         <div className="text-sm text-gray-700 space-y-2">
-          {contact.name && <p className="font-medium">{contact.name}</p>}
-          {contact.location && <p>{contact.location}</p>}
-          
-          {/* Only show the email/phone line if at least one exists */}
-          {(contact.email || contact.phone) && (
-            <p>
-              {contact.email}
-              {contact.email && contact.phone && " | "}
-              {contact.phone}
-            </p>
-          )}
-          
-          {/* Only show the linkedin/github line if at least one exists */}
-          {(contact.linkedin || contact.github) && (
-            <p>
-              {contact.linkedin}
-              {contact.linkedin && contact.github && " | "}
-              {contact.github}
-            </p>
-          )}
+          {Object.entries(contact).map(([key, value]) => {
+            // Skip empty values
+            if (!value) return null;
+            
+            // Format the label from camelCase to Title Case
+            const formattedLabel = key.replace(/([A-Z])/g, ' $1')
+              .replace(/^./, str => str.toUpperCase());
+            
+            return (
+              <div key={key} className="flex">
+                <span className="font-medium w-24">{formattedLabel}:</span>
+                <span>{String(value)}</span>
+              </div>
+            );
+          })}
         </div>
       );
     } 
@@ -348,28 +348,48 @@ export function ResumeSection({ title, sectionId, content }: ResumeSectionProps)
     }
     
     if (sectionId === 'skills') {
-      if (!content || !content.languages && !content.frameworks && !content.tools && !content.concepts) {
+      // Check if skills object is missing or has no valid arrays
+      if (!content || typeof content !== 'object') {
         return renderEmptyState();
       }
+      
+      // Count how many valid skill categories we have
+      const validCategories = ['languages', 'frameworks', 'tools', 'concepts'].filter(
+        category => Array.isArray(content[category]) && content[category].length > 0
+      );
+      
+      if (validCategories.length === 0) {
+        return renderEmptyState();
+      }
+      
+      // Mapping of category keys to display names
+      const categoryLabels = {
+        languages: 'Languages',
+        frameworks: 'Frameworks/Libraries',
+        tools: 'Tools',
+        concepts: 'Concepts'
+      };
       
       return (
         <div className="text-sm text-gray-700">
           <div className="space-y-2">
-            {Array.isArray(content.languages) && content.languages.length > 0 && (
-              <p><span className="font-medium">Languages:</span> {content.languages.join(', ')}</p>
-            )}
-            
-            {Array.isArray(content.frameworks) && content.frameworks.length > 0 && (
-              <p><span className="font-medium">Frameworks/Libraries:</span> {content.frameworks.join(', ')}</p>
-            )}
-            
-            {Array.isArray(content.tools) && content.tools.length > 0 && (
-              <p><span className="font-medium">Tools:</span> {content.tools.join(', ')}</p>
-            )}
-            
-            {Array.isArray(content.concepts) && content.concepts.length > 0 && (
-              <p><span className="font-medium">Concepts:</span> {content.concepts.join(', ')}</p>
-            )}
+            {Object.entries(content).map(([category, skills]) => {
+              // Skip if not an array or empty array
+              if (!Array.isArray(skills) || skills.length === 0) {
+                return null;
+              }
+              
+              // Get the display name for this category or use the category key with first letter capitalized
+              const categoryLabel = categoryLabels[category as keyof typeof categoryLabels] || 
+                category.charAt(0).toUpperCase() + category.slice(1);
+              
+              return (
+                <div key={category} className="mb-2">
+                  <span className="font-medium">{categoryLabel}:</span>{' '}
+                  {skills.join(', ')}
+                </div>
+              );
+            })}
           </div>
         </div>
       );
