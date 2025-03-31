@@ -56,12 +56,20 @@ export function ResultsSection({ tailoredResume, onRestart }: ResultsSectionProp
           content={tailoredResume.summary}
         />
         
-        {/* Experience Section */}
-        <ResumeSection
-          title="Work Experience"
-          sectionId="experience"
-          content={tailoredResume.experience}
-        />
+        {/* Choose either standard Experience or specialized Work Experience section */}
+        {(!tailoredResume.workExperience || tailoredResume.workExperience.length === 0) ? (
+          <ResumeSection
+            title="Work Experience" 
+            sectionId="experience"
+            content={tailoredResume.experience}
+          />
+        ) : (
+          <ResumeSection
+            title="Work Experience"
+            sectionId="workExperience"
+            content={tailoredResume.workExperience}
+          />
+        )}
         
         {/* Education Section */}
         <ResumeSection
@@ -83,15 +91,6 @@ export function ResultsSection({ tailoredResume, onRestart }: ResultsSectionProp
           sectionId="projects"
           content={tailoredResume.projects}
         />
-        
-        {/* Work Experience Section (if present) */}
-        {tailoredResume.workExperience && tailoredResume.workExperience.length > 0 && (
-          <ResumeSection
-            title="Work Experience"
-            sectionId="workExperience"
-            content={tailoredResume.workExperience}
-          />
-        )}
         
         {/* Additional Sections (if present) */}
         {tailoredResume.additionalSections && Object.keys(tailoredResume.additionalSections).length > 0 && 
