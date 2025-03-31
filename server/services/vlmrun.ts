@@ -81,36 +81,90 @@ function parseVlmResponse(response: any): ResumeData {
   };
   
   // Parse if response exists, otherwise return default structure
-  if (!response) {
+  if (!response || !response.response) {
     console.warn("Empty VLM Run response, returning default structure");
     return defaultResume;
   }
   
   try {
-    return {
-      contact: {
-        name: extractValue(response, "name") || extractValue(response, "contact.name") || "",
-        location: extractValue(response, "location") || extractValue(response, "contact.location") || "",
-        email: extractValue(response, "email") || extractValue(response, "contact.email") || "",
-        phone: extractValue(response, "phone") || extractValue(response, "contact.phone") || "",
-        linkedin: extractValue(response, "linkedin") || extractValue(response, "contact.linkedin") || "",
-        github: extractValue(response, "github") || extractValue(response, "contact.github") || "",
-      },
-      summary: extractValue(response, "summary") || "",
-      experience: extractExperiences(response),
-      education: extractEducation(response),
-      skills: {
-        languages: extractSkills(response, "languages"),
-        frameworks: extractSkills(response, "frameworks"),
-        tools: extractSkills(response, "tools"),
-        concepts: extractSkills(response, "concepts"),
-      },
-      projects: extractProjects(response),
+    // The actual response data is in the 'response' property
+    const vlmData = response.response;
+    console.log("VLM Run data structure:", Object.keys(vlmData).join(", "));
+    
+    // Extract contact info
+    const contactInfo = vlmData.contact_info || {};
+    const contact = {
+      name: contactInfo.full_name || "",
+      location: contactInfo.address || "",
+      email: contactInfo.email || "",
+      phone: contactInfo.phone || "",
+      linkedin: contactInfo.linkedin || "",
+      github: contactInfo.github || "",
     };
+    
+    // Extract summary
+    const summary = vlmData.summary || "";
+    
+    // Extract experience
+    const experience = (vlmData.experience || []).map((exp: any) => ({
+      title: exp.title || "",
+      company: exp.company || "",
+      location: exp.location || "",
+      startDate: exp.start_date || "",
+      endDate: exp.end_date || "",
+      responsibilities: exp.description ? 
+        (Array.isArray(exp.description) ? exp.description : [exp.description]) : 
+        (exp.responsibilities || []),
+    }));
+    
+    // Extract education
+    const education = (vlmData.education || []).map((edu: any) => ({
+      degree: edu.degree || "",
+      institution: edu.institution || "",
+      years: `${edu.start_date || ""} - ${edu.end_date || ""}`,
+      gpa: edu.gpa || "",
+    }));
+    
+    // Extract skills
+    const skills = {
+      languages: extractArrayOrSplit(vlmData.skills?.programming_languages || vlmData.programming_languages || []),
+      frameworks: extractArrayOrSplit(vlmData.skills?.frameworks || vlmData.frameworks || []),
+      tools: extractArrayOrSplit(vlmData.skills?.tools || vlmData.tools || []),
+      concepts: extractArrayOrSplit(vlmData.skills?.concepts || vlmData.concepts || []),
+    };
+    
+    // Extract projects
+    const projects = (vlmData.projects || []).map((proj: any) => ({
+      name: proj.name || proj.title || "",
+      description: proj.description ? 
+        (Array.isArray(proj.description) ? proj.description : [proj.description]) : [],
+    }));
+    
+    const resumeData = {
+      contact,
+      summary,
+      experience,
+      education,
+      skills,
+      projects,
+    };
+    
+    // Log the structured data
+    console.log("Parsed resume data:", JSON.stringify(resumeData).substring(0, 200) + "...");
+    
+    return resumeData;
   } catch (error) {
     console.error("Error parsing VLM Run response:", error);
     return defaultResume;
   }
+}
+
+// Helper function to handle values that might be strings or arrays
+function extractArrayOrSplit(value: any): string[] {
+  if (!value) return [];
+  if (Array.isArray(value)) return value;
+  if (typeof value === 'string') return value.split(',').map(item => item.trim());
+  return [];
 }
 
 // Helper functions to extract data from VLM response
