@@ -40,6 +40,20 @@ export interface Project {
   description: string[];
 }
 
+export interface WorkExperience {
+  company: string;
+  position: string;
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
+  responsibilities: string[];
+  technologies: string[];
+}
+
+export interface AdditionalSections {
+  [key: string]: string[];
+}
+
 export interface ResumeData {
   contact: ContactInfo;
   summary: string;
@@ -47,6 +61,8 @@ export interface ResumeData {
   education: Education[];
   skills: Skills;
   projects: Project[];
+  workExperience?: WorkExperience[];
+  additionalSections?: AdditionalSections;
 }
 
 // Define database tables

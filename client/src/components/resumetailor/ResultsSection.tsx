@@ -83,6 +83,29 @@ export function ResultsSection({ tailoredResume, onRestart }: ResultsSectionProp
           sectionId="projects"
           content={tailoredResume.projects}
         />
+        
+        {/* Work Experience Section (if present) */}
+        {tailoredResume.workExperience && tailoredResume.workExperience.length > 0 && (
+          <ResumeSection
+            title="Work Experience"
+            sectionId="workExperience"
+            content={tailoredResume.workExperience}
+          />
+        )}
+        
+        {/* Additional Sections (if present) */}
+        {tailoredResume.additionalSections && Object.keys(tailoredResume.additionalSections).length > 0 && 
+          Object.entries(tailoredResume.additionalSections).map(([sectionName, items]) => (
+            <ResumeSection
+              key={sectionName}
+              title={sectionName.split('_').map(word => 
+                word.charAt(0).toUpperCase() + word.slice(1)
+              ).join(' ')}
+              sectionId={`additionalSection-${sectionName}`}
+              content={items}
+            />
+          ))
+        }
       </div>
     </section>
   );

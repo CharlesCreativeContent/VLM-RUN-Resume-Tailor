@@ -138,6 +138,52 @@ export function ResumeSection({ title, sectionId, content }: ResumeSectionProps)
           return projLines.join('\n');
         }).join('\n\n');
       }
+    } else if (sectionId === 'workExperience') {
+      if (Array.isArray(content)) {
+        const experiences = content as any[];
+        textToCopy = experiences.map(exp => {
+          const expLines = [];
+          
+          // Title/Position line
+          if (exp.position) {
+            expLines.push(exp.position);
+          }
+          
+          // Company and date line
+          const companyDateLine = [];
+          if (exp.company) companyDateLine.push(exp.company);
+          
+          const dateRange = [];
+          if (exp.startDate) dateRange.push(exp.startDate);
+          if (exp.endDate) dateRange.push(exp.endDate);
+          else if (exp.isCurrent) dateRange.push('Present');
+          
+          if (dateRange.length > 0) {
+            companyDateLine.push(dateRange.join(' - '));
+          }
+          
+          if (companyDateLine.length > 0) {
+            expLines.push(companyDateLine.join(' | '));
+          }
+          
+          // Responsibilities
+          if (Array.isArray(exp.responsibilities) && exp.responsibilities.length > 0) {
+            expLines.push(...exp.responsibilities.map((r: string) => `• ${r}`));
+          }
+          
+          // Technologies used
+          if (Array.isArray(exp.technologies) && exp.technologies.length > 0) {
+            expLines.push(`Technologies: ${exp.technologies.join(', ')}`);
+          }
+          
+          return expLines.join('\n');
+        }).join('\n\n');
+      }
+    } else if (sectionId.startsWith('additionalSection-')) {
+      if (Array.isArray(content)) {
+        // Format each item as a bullet point
+        textToCopy = content.map((item: string) => `• ${item}`).join('\n');
+      }
     } else {
       // Default to JSON
       textToCopy = JSON.stringify(content, null, 2);
@@ -347,6 +393,55 @@ export function ResumeSection({ title, sectionId, content }: ResumeSectionProps)
               )}
             </div>
           ))}
+        </div>
+      );
+    }
+    
+    if (sectionId === 'workExperience') {
+      if (!Array.isArray(content) || content.length === 0) return renderEmptyState();
+      
+      return (
+        <div className="text-sm text-gray-700 space-y-4">
+          {content.map((exp: any, index: number) => (
+            <div key={index} className="space-y-1">
+              <div className="flex justify-between">
+                <p className="font-medium">{exp.position || 'Position not specified'}</p>
+                <p className="text-sm text-gray-500">
+                  {exp.startDate || ''}
+                  {exp.startDate && exp.endDate && " - "}
+                  {exp.endDate || (exp.isCurrent ? 'Present' : '')}
+                </p>
+              </div>
+              <p className="text-sm">{exp.company || 'Company not specified'}</p>
+              
+              {Array.isArray(exp.responsibilities) && exp.responsibilities.length > 0 && (
+                <ul className="list-disc pl-5 space-y-1">
+                  {exp.responsibilities.map((responsibility: string, respIndex: number) => (
+                    <li key={respIndex}>{responsibility}</li>
+                  ))}
+                </ul>
+              )}
+              
+              {Array.isArray(exp.technologies) && exp.technologies.length > 0 && (
+                <p className="mt-1"><span className="font-medium">Technologies:</span> {exp.technologies.join(', ')}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    
+    if (sectionId.startsWith('additionalSection-')) {
+      // This is a custom section from additional_sections
+      if (!Array.isArray(content) || content.length === 0) return renderEmptyState();
+      
+      return (
+        <div className="text-sm text-gray-700">
+          <ul className="list-disc pl-5 space-y-2">
+            {content.map((item: string, index: number) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
         </div>
       );
     }

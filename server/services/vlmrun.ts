@@ -78,6 +78,8 @@ function parseVlmResponse(response: any): ResumeData {
       concepts: [],
     },
     projects: [],
+    workExperience: [],
+    additionalSections: {},
   };
   
   // Parse if response exists, otherwise return default structure
@@ -117,6 +119,18 @@ function parseVlmResponse(response: any): ResumeData {
         (exp.responsibilities || []),
     }));
     
+    // Extract work experience (added for VLM Run's specific work_experience field)
+    const workExperience = (vlmData.work_experience || []).map((exp: any) => ({
+      company: exp.company || "",
+      position: exp.position || "",
+      startDate: exp.start_date || "",
+      endDate: exp.end_date || "",
+      isCurrent: exp.is_current || false,
+      responsibilities: Array.isArray(exp.responsibilities) ? exp.responsibilities : [],
+      technologies: exp.technologies ? 
+        (Array.isArray(exp.technologies) ? exp.technologies : [exp.technologies]) : [],
+    }));
+    
     // Extract education
     const education = (vlmData.education || []).map((edu: any) => ({
       degree: edu.degree || "",
@@ -140,6 +154,18 @@ function parseVlmResponse(response: any): ResumeData {
         (Array.isArray(proj.description) ? proj.description : [proj.description]) : [],
     }));
     
+    // Extract additional sections
+    const additionalSections: {[key: string]: string[]} = {};
+    if (vlmData.additional_sections && typeof vlmData.additional_sections === 'object') {
+      for (const [key, value] of Object.entries(vlmData.additional_sections)) {
+        if (Array.isArray(value)) {
+          additionalSections[key] = value;
+        } else if (typeof value === 'string') {
+          additionalSections[key] = [value];
+        }
+      }
+    }
+    
     const resumeData = {
       contact,
       summary,
@@ -147,6 +173,8 @@ function parseVlmResponse(response: any): ResumeData {
       education,
       skills,
       projects,
+      workExperience: workExperience.length > 0 ? workExperience : undefined,
+      additionalSections: Object.keys(additionalSections).length > 0 ? additionalSections : undefined,
     };
     
     // Log the structured data

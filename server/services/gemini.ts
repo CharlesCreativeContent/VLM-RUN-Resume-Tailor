@@ -208,6 +208,103 @@ export async function tailorResume(
       console.log("Projects tailored successfully");
     }
     
+    // 5. Tailor work experience (if present)
+    console.log("Tailoring work experience...");
+    if (resume.workExperience && resume.workExperience.length > 0) {
+      const tailoredWorkExperiences = [];
+      
+      for (const exp of resume.workExperience) {
+        try {
+          const workExperiencePrompt = `
+          Tailor these work responsibilities to be more relevant for a job with the following details:
+          
+          Position: "${exp.position || 'Not specified'}"
+          Company: "${exp.company || 'Not specified'}"
+          
+          Original responsibilities:
+          ${exp.responsibilities.join('\n')}
+          
+          Job details to tailor for:
+          ${jobDetails}
+          
+          Provide ONLY a list of improved bullet points - one per line, without numbers, quotes, or any additional formatting.
+          Focus on highlighting relevant skills and achievements that match the job requirements.
+          Don't mention the job posting or that this is a tailored version.
+          Keep each bullet point concise (1-2 sentences each).
+          Maintain approximately the same number of bullet points.
+          `;
+          
+          const workExpResult = await model.generateContent(workExperiencePrompt);
+          const workExpResponse = await workExpResult.response;
+          const tailoredResponsibilities = workExpResponse.text()
+            .split('\n')
+            .filter(line => line.trim())
+            .map(line => line.trim().replace(/^[•\-\*]\s*/, ''));
+          
+          tailoredWorkExperiences.push({
+            ...exp,
+            responsibilities: tailoredResponsibilities.length > 0 ? tailoredResponsibilities : exp.responsibilities
+          });
+          
+        } catch (error) {
+          console.error(`Error tailoring work experience for ${exp.position || 'position'}:`, error);
+          // If there's an error, keep the original experience entry
+          tailoredWorkExperiences.push(exp);
+        }
+      }
+      
+      tailoredResume.workExperience = tailoredWorkExperiences;
+      console.log("Work experience tailored successfully");
+    }
+    
+    // 6. Tailor additional sections (if present)
+    console.log("Tailoring additional sections...");
+    if (resume.additionalSections && Object.keys(resume.additionalSections).length > 0) {
+      const tailoredAdditionalSections: {[key: string]: string[]} = {};
+      
+      for (const [sectionName, items] of Object.entries(resume.additionalSections)) {
+        if (Array.isArray(items) && items.length > 0) {
+          try {
+            const additionalSectionPrompt = `
+            Tailor these items to be more relevant for a job with the following details:
+            
+            Section name: "${sectionName}"
+            
+            Original items:
+            ${items.join('\n')}
+            
+            Job details to tailor for:
+            ${jobDetails}
+            
+            Provide ONLY a list of improved items - one per line, without numbers, quotes, or any additional formatting.
+            Focus on highlighting relevant information that matches the job requirements.
+            Don't mention the job posting or that this is a tailored version.
+            Keep approximately the same amount of information.
+            `;
+            
+            const sectionResult = await model.generateContent(additionalSectionPrompt);
+            const sectionResponse = await sectionResult.response;
+            const tailoredItems = sectionResponse.text()
+              .split('\n')
+              .filter(line => line.trim())
+              .map(line => line.trim().replace(/^[•\-\*]\s*/, ''));
+            
+            tailoredAdditionalSections[sectionName] = tailoredItems.length > 0 ? tailoredItems : items;
+            
+          } catch (error) {
+            console.error(`Error tailoring additional section ${sectionName}:`, error);
+            // If there's an error, keep the original section items
+            tailoredAdditionalSections[sectionName] = items;
+          }
+        } else {
+          tailoredAdditionalSections[sectionName] = items;
+        }
+      }
+      
+      tailoredResume.additionalSections = tailoredAdditionalSections;
+      console.log("Additional sections tailored successfully");
+    }
+    
     // We don't modify education - just keep the original
     
     console.log("Resume tailoring completed successfully");
