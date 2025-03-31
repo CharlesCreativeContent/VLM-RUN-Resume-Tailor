@@ -18,8 +18,8 @@ export async function tailorResume(
     
     // Initialize Gemini client
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Use the appropriate model name for the current Gemini API version
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    // Use gemini-1.0-pro (Flash) to avoid rate limits
+    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
     
     // Create a deep copy of the original resume to build our tailored version
     const tailoredResume: ResumeData = JSON.parse(JSON.stringify(resume));
