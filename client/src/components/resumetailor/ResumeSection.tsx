@@ -433,7 +433,12 @@ export function ResumeSection({ title, sectionId, content }: ResumeSectionProps)
     
     if (sectionId.startsWith('additionalSection-')) {
       // This is a custom section from additional_sections
-      if (!Array.isArray(content) || content.length === 0) return renderEmptyState();
+      if (!Array.isArray(content) || content.length === 0) {
+        console.log("Empty additional section content:", content);
+        return renderEmptyState();
+      }
+      
+      console.log("Rendering additional section content:", content);
       
       return (
         <div className="text-sm text-gray-700">

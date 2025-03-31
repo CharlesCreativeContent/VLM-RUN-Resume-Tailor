@@ -93,18 +93,30 @@ export function ResultsSection({ tailoredResume, onRestart }: ResultsSectionProp
         />
         
         {/* Additional Sections (if present) */}
-        {tailoredResume.additionalSections && Object.keys(tailoredResume.additionalSections).length > 0 && 
-          Object.entries(tailoredResume.additionalSections).map(([sectionName, items]) => (
-            <ResumeSection
-              key={sectionName}
-              title={sectionName.split('_').map(word => 
-                word.charAt(0).toUpperCase() + word.slice(1)
-              ).join(' ')}
-              sectionId={`additionalSection-${sectionName}`}
-              content={items}
-            />
-          ))
+        {tailoredResume.additionalSections && 
+          typeof tailoredResume.additionalSections === 'object' && 
+          Object.keys(tailoredResume.additionalSections).length > 0 && 
+          Object.entries(tailoredResume.additionalSections).map(([sectionName, items]) => {
+            console.log("Rendering additional section:", sectionName, items);
+            return (
+              <ResumeSection
+                key={sectionName}
+                title={sectionName.split('_').map(word => 
+                  word.charAt(0).toUpperCase() + word.slice(1)
+                ).join(' ')}
+                sectionId={`additionalSection-${sectionName}`}
+                content={items}
+              />
+            );
+          })
         }
+        
+        {/* For debugging - add test section */}
+        <ResumeSection
+          title="Certifications (Test)"
+          sectionId="additionalSection-certifications"
+          content={["AWS Certified Developer", "Microsoft Certified Professional"]}
+        />
       </div>
     </section>
   );
