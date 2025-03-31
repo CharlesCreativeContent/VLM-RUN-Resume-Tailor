@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import multer from "multer";
@@ -6,13 +6,18 @@ import { parseResume } from "./services/vlmrun";
 import { fetchJobDetails } from "./services/jobFetcher";
 import { tailorResume, askResumeQuestion } from "./services/gemini";
 
+// Define Request with file for multer
+interface MulterRequest extends Request {
+  file?: Express.Multer.File;
+}
+
 // Configure multer for file uploads
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
-  fileFilter: (_req, file, callback) => {
+  fileFilter: (_req: Request, file: Express.Multer.File, callback: multer.FileFilterCallback) => {
     if (file.mimetype !== "application/pdf") {
       return callback(new Error("Only PDF files are allowed"));
     }
@@ -24,7 +29,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API routes
   
   // Parse resume PDF with VLM Run
-  app.post("/api/resume/parse", upload.single("file"), async (req: Request, res: Response) => {
+  app.post("/api/resume/parse", upload.single("file"), async (req: MulterRequest, res: Response) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No file uploaded" });
@@ -112,10 +117,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get answer using Gemini
+      console.log(`Processing question: "${question.substring(0, 50)}..."`);
       const answer = await askResumeQuestion(resume, question, geminiApiKey);
       console.log("Question answered successfully");
+      console.log("Answer length:", answer?.length || 0);
+      console.log("Answer preview:", answer?.substring(0, 100));
       
-      return res.status(200).json({ answer });
+      // Ensure we always return a string, even if the API returns null or undefined
+      return res.status(200).json({ 
+        answer: answer || "Sorry, I couldn't generate an answer to that question. Please try a different question." 
+      });
     } catch (error) {
       console.error("Error answering question:", error);
       return res.status(500).json({

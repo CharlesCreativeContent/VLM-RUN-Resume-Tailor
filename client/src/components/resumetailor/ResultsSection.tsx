@@ -58,11 +58,12 @@ export function ResultsSection({ tailoredResume, onRestart, geminiApiKey }: Resu
     },
     onSuccess: (data: any) => {
       // Log the response to help debug
-      console.log("Question answer received:", data.answer);
+      console.log("Question answer received:", data);
+      console.log("Answer content:", data?.answer);
       
       // Process the answer for display
-      if (data.answer) {
-        setAnswer(data.answer);
+      if (data && typeof data.answer === 'string' && data.answer.trim()) {
+        setAnswer(data.answer.trim());
       } else {
         setAnswer("No answer was generated. Please try another question.");
       }
@@ -190,17 +191,35 @@ export function ResultsSection({ tailoredResume, onRestart, geminiApiKey }: Resu
           ) : answer ? (
             <>
               <h3 className="text-base font-medium mb-2 text-primary">Answer:</h3>
-              <div className="text-sm whitespace-pre-line prose prose-sm max-w-none">
+              <div className="text-sm prose prose-sm max-w-none bg-white p-3 rounded border border-slate-100">
                 {answer.split('\n').map((line, i) => {
+                  // Skip empty lines
+                  if (!line.trim()) {
+                    return <div key={i} className="h-2"></div>;
+                  }
+                  
                   // Handle markdown bullet points
                   if (line.trim().startsWith('*') || line.trim().startsWith('-')) {
                     return (
-                      <div key={i} className="ml-2 my-1">
-                        <span className="mr-2 inline-block">•</span>
-                        {line.trim().replace(/^[*\-]\s*/, '')}
+                      <div key={i} className="ml-2 my-1 flex">
+                        <span className="mr-2 text-primary">•</span>
+                        <span>{line.trim().replace(/^[*\-]\s*/, '')}</span>
                       </div>
                     );
                   }
+                  
+                  // Handle headers (e.g., # Header)
+                  if (line.trim().startsWith('#')) {
+                    const level = line.trim().match(/^#+/)?.[0].length || 1;
+                    const text = line.trim().replace(/^#+\s*/, '');
+                    
+                    if (level === 1) {
+                      return <h3 key={i} className="text-lg font-semibold mt-3 mb-2">{text}</h3>;
+                    } else {
+                      return <h4 key={i} className="text-base font-medium mt-2 mb-1">{text}</h4>;
+                    }
+                  }
+                  
                   // Handle regular text
                   return <div key={i} className="my-1">{line}</div>;
                 })}
