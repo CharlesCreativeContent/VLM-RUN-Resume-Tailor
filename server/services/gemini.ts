@@ -14,9 +14,10 @@ export async function tailorResume(
   apiKey: string
 ): Promise<ResumeData> {
   try {
-    // Initialize the Gemini API client
+    // Initialize the Gemini API client with the correct API version
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // Use the appropriate model name for the current Gemini API version
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
     // Prepare the prompt
     const prompt = `
