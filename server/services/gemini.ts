@@ -18,8 +18,8 @@ export async function askResumeQuestion(
     
     // Initialize Gemini client
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Use gemini-1.0-pro (Flash) to avoid rate limits
-    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
+    // Use gemini-2.0-flash-lite to avoid rate limits
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
     
     // Format resume data for the prompt
     const resumeJson = JSON.stringify(resume, null, 2);
@@ -66,8 +66,8 @@ export async function tailorResume(
     
     // Initialize Gemini client
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Use gemini-1.0-pro (Flash) to avoid rate limits
-    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
+    // Use gemini-2.0-flash-lite to avoid rate limits
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-lite" });
     
     // Create a deep copy of the original resume to build our tailored version
     const tailoredResume: ResumeData = JSON.parse(JSON.stringify(resume));
