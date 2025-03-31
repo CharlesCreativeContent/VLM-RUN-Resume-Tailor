@@ -57,7 +57,15 @@ export function ResultsSection({ tailoredResume, onRestart, geminiApiKey }: Resu
       return apiRequest("POST", '/api/resume/question', data);
     },
     onSuccess: (data: any) => {
-      setAnswer(data.answer);
+      // Log the response to help debug
+      console.log("Question answer received:", data.answer);
+      
+      // Process the answer for display
+      if (data.answer) {
+        setAnswer(data.answer);
+      } else {
+        setAnswer("No answer was generated. Please try another question.");
+      }
     },
     onError: (error) => {
       console.error("Error asking question:", error);
@@ -172,12 +180,36 @@ export function ResultsSection({ tailoredResume, onRestart, geminiApiKey }: Resu
           </div>
         </form>
         
-        {answer && (
-          <div className="mb-6 mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
-            <h3 className="text-base font-medium mb-2">Answer:</h3>
-            <div className="text-sm whitespace-pre-line">{answer}</div>
-          </div>
-        )}
+        {/* Always show the answer container, but conditionally show loading or content */}
+        <div className="mb-6 mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+          {askQuestionMutation.isPending ? (
+            <>
+              <h3 className="text-base font-medium mb-2">Generating answer...</h3>
+              <div className="text-sm animate-pulse">Thinking...</div>
+            </>
+          ) : answer ? (
+            <>
+              <h3 className="text-base font-medium mb-2 text-primary">Answer:</h3>
+              <div className="text-sm whitespace-pre-line prose prose-sm max-w-none">
+                {answer.split('\n').map((line, i) => {
+                  // Handle markdown bullet points
+                  if (line.trim().startsWith('*') || line.trim().startsWith('-')) {
+                    return (
+                      <div key={i} className="ml-2 my-1">
+                        <span className="mr-2 inline-block">•</span>
+                        {line.trim().replace(/^[*\-]\s*/, '')}
+                      </div>
+                    );
+                  }
+                  // Handle regular text
+                  return <div key={i} className="my-1">{line}</div>;
+                })}
+              </div>
+            </>
+          ) : (
+            <div className="text-sm text-gray-500">Ask a question about this resume to get insights</div>
+          )}
+        </div>
       </div>
 
       <div className="space-y-6">
