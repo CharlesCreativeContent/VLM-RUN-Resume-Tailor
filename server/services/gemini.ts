@@ -1,8 +1,8 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { ResumeData } from '@shared/schema';
+import { ResumeData, Experience, Education, Project } from '@shared/schema';
 
 /**
- * Tailor a resume to a job posting using Gemini API
+ * Tailor a resume to a job posting using Gemini API by updating each section individually
  * @param resume Original resume data
  * @param jobDetails Job posting details
  * @param apiKey Gemini API key
@@ -14,251 +14,208 @@ export async function tailorResume(
   apiKey: string
 ): Promise<ResumeData> {
   try {
+    console.log("Starting resume tailoring process with Gemini");
+    
     // Initialize Gemini client
     const genAI = new GoogleGenerativeAI(apiKey);
     // Use the appropriate model name for the current Gemini API version
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
-
-    // Prepare the prompt
-    const prompt = `
-    I need you to tailor a resume for a job application.
-
-    Here's the original resume data in JSON format:
-    ${JSON.stringify(resume, null, 2)}
-
-    And here are the job details:
+    
+    // Create a deep copy of the original resume to build our tailored version
+    const tailoredResume: ResumeData = JSON.parse(JSON.stringify(resume));
+    
+    // 1. Tailor the summary
+    console.log("Tailoring professional summary...");
+    const summaryPrompt = `
+    Tailor this professional summary for a job with the following details:
+    
+    Original summary: "${resume.summary}"
+    
+    Job details:
     ${jobDetails}
-
-    Please analyze the job posting and tailor the resume to highlight relevant skills and experiences.
-    Return a modified JSON with the same structure as the original resume.
-    Emphasize skills and experiences that match the job requirements.
-    Modify work experience descriptions to emphasize relevant responsibilities.
-    Keep the same JSON schema/structure but modify the content to be more relevant to the job.
-    IMPORTANT: Don't modify the contact information at all, keep it exactly the same.
-    Return ONLY the JSON data in a format that can be parsed by JSON.parse(), without any explanations, comments, or markdown formatting.
+    
+    Provide ONLY the improved summary text without any additional notes, formatting, quotes, or explanations.
+    Ensure it highlights relevant skills and experiences that match the job requirements.
+    Keep it concise and professional. Maximum 4-5 sentences.
     `;
-
-    // Generate response from Gemini
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const responseText = response.text();
-    
-    // Parse response text to get tailored resume
-    return parseTailoredResume(responseText, resume);
-  } catch (error) {
-    console.error("Error tailoring resume with Gemini:", error);
-    throw new Error(`Failed to tailor resume: ${error instanceof Error ? error.message : String(error)}`);
-  }
-}
-
-/**
- * Parse Gemini response to extract tailored resume JSON
- * @param responseText Response text from Gemini
- * @param originalResume Original resume data as fallback
- * @returns Tailored resume data
- */
-function parseTailoredResume(responseText: string, originalResume: ResumeData): ResumeData {
-  try {
-    // Log the raw response for debugging
-    console.log("Raw Gemini response:", responseText.substring(0, 500) + "...");
-    
-    // Extract JSON from response text
-    let jsonText = extractJsonFromText(responseText);
-    
-    // Clean the JSON text
-    const cleanJsonText = cleanJsonString(jsonText);
-    
-    // Log the cleaned JSON text for debugging
-    console.log("Cleaned JSON text:", cleanJsonText.substring(0, 200) + "...");
     
     try {
-      // Try to parse the cleaned JSON directly
-      const tailoredResume = JSON.parse(cleanJsonText) as ResumeData;
-      console.log("Successfully parsed the JSON");
-      return processResumeData(tailoredResume, originalResume);
-    } catch (parseError) {
-      console.error("First parsing attempt failed:", parseError);
+      const summaryResult = await model.generateContent(summaryPrompt);
+      const summaryResponse = await summaryResult.response;
+      tailoredResume.summary = summaryResponse.text().trim();
+      console.log("Summary tailored successfully");
+    } catch (error) {
+      console.error("Error tailoring summary:", error);
+      // If there's an error, keep the original summary
+    }
+    
+    // 2. Tailor each experience entry
+    console.log("Tailoring work experience...");
+    if (resume.experience && resume.experience.length > 0) {
+      const tailoredExperiences = [];
+      
+      for (const exp of resume.experience) {
+        try {
+          const experiencePrompt = `
+          Tailor these job responsibilities to be more relevant for a job with the following details:
+          
+          Job title: "${exp.title}"
+          Company: "${exp.company}"
+          
+          Original responsibilities:
+          ${exp.responsibilities.join('\n')}
+          
+          Job details to tailor for:
+          ${jobDetails}
+          
+          Provide ONLY a list of improved bullet points - one per line, without numbers, quotes, or any additional formatting.
+          Focus on highlighting relevant skills and achievements that match the job requirements.
+          Don't mention the job posting or that this is a tailored version.
+          Keep each bullet point concise (1-2 sentences each).
+          Maintain approximately the same number of bullet points.
+          `;
+          
+          const expResult = await model.generateContent(experiencePrompt);
+          const expResponse = await expResult.response;
+          const tailoredResponsibilities = expResponse.text()
+            .split('\n')
+            .filter(line => line.trim())
+            .map(line => line.trim().replace(/^[•\-\*]\s*/, ''));
+          
+          tailoredExperiences.push({
+            ...exp,
+            responsibilities: tailoredResponsibilities.length > 0 ? tailoredResponsibilities : exp.responsibilities
+          });
+          
+        } catch (error) {
+          console.error(`Error tailoring experience for ${exp.title}:`, error);
+          // If there's an error, keep the original experience entry
+          tailoredExperiences.push(exp);
+        }
+      }
+      
+      tailoredResume.experience = tailoredExperiences;
+      console.log("Work experience tailored successfully");
+    }
+    
+    // 3. Tailor skills (frameworks, tools, concepts first, then languages)
+    console.log("Tailoring skills...");
+    try {
+      const skillsPrompt = `
+      Based on this job description, which of these skills should be emphasized and prioritized?
+      
+      Original skills:
+      - Languages: ${resume.skills.languages.join(', ')}
+      - Frameworks: ${resume.skills.frameworks.join(', ')}
+      - Tools: ${resume.skills.tools.join(', ')}
+      - Concepts: ${resume.skills.concepts.join(', ')}
+      
+      Job details:
+      ${jobDetails}
+      
+      Format your response as a JSON object with these exact keys:
+      {
+        "languages": ["list", "of", "tailored", "skills"],
+        "frameworks": ["list", "of", "tailored", "skills"],
+        "tools": ["list", "of", "tailored", "skills"],
+        "concepts": ["list", "of", "tailored", "skills"]
+      }
+      
+      Don't remove any skills, but reorder them to put the most relevant ones first.
+      `;
+      
+      const skillsResult = await model.generateContent(skillsPrompt);
+      const skillsResponse = await skillsResult.response;
+      const skillsText = skillsResponse.text();
       
       try {
-        // If direct parsing fails, try a more aggressive approach to fix the JSON
-        const fixedJson = fixJsonString(cleanJsonText);
-        console.log("Fixed JSON:", fixedJson.substring(0, 200) + "...");
-        
-        const tailoredResume = JSON.parse(fixedJson) as ResumeData;
-        console.log("Successfully parsed the fixed JSON");
-        return processResumeData(tailoredResume, originalResume);
-      } catch (secondError) {
-        console.error("Second parsing attempt failed:", secondError);
-        // If all parsing attempts fail, use the original resume as fallback
-        return originalResume;
+        // Try to extract and parse JSON
+        const jsonMatch = skillsText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsedSkills = JSON.parse(jsonMatch[0]);
+          
+          // Only update if we got valid arrays, otherwise keep original
+          if (Array.isArray(parsedSkills.languages)) {
+            tailoredResume.skills.languages = parsedSkills.languages;
+          }
+          if (Array.isArray(parsedSkills.frameworks)) {
+            tailoredResume.skills.frameworks = parsedSkills.frameworks;
+          }
+          if (Array.isArray(parsedSkills.tools)) {
+            tailoredResume.skills.tools = parsedSkills.tools;
+          }
+          if (Array.isArray(parsedSkills.concepts)) {
+            tailoredResume.skills.concepts = parsedSkills.concepts;
+          }
+          console.log("Skills tailored successfully");
+        } else {
+          console.log("Could not extract skills JSON, keeping original skills");
+        }
+      } catch (parseError) {
+        console.error("Error parsing skills response:", parseError);
+        // Keep original skills on parse error
       }
+    } catch (error) {
+      console.error("Error tailoring skills:", error);
+      // Keep original skills on API error
     }
+    
+    // 4. Tailor projects (if present)
+    console.log("Tailoring projects...");
+    if (resume.projects && resume.projects.length > 0) {
+      const tailoredProjects = [];
+      
+      for (const project of resume.projects) {
+        try {
+          const projectPrompt = `
+          Tailor this project description to be more relevant for a job with the following details:
+          
+          Project name: "${project.name}"
+          
+          Original description:
+          ${project.description.join('\n')}
+          
+          Job details to tailor for:
+          ${jobDetails}
+          
+          Provide ONLY a list of improved bullet points - one per line, without numbers, quotes, or any additional formatting.
+          Focus on highlighting aspects of the project that match the job requirements.
+          Don't mention the job posting or that this is a tailored version.
+          Keep each bullet point concise (1-2 sentences each).
+          Maintain approximately the same number of bullet points.
+          `;
+          
+          const projectResult = await model.generateContent(projectPrompt);
+          const projectResponse = await projectResult.response;
+          const tailoredDescription = projectResponse.text()
+            .split('\n')
+            .filter(line => line.trim())
+            .map(line => line.trim().replace(/^[•\-\*]\s*/, ''));
+          
+          tailoredProjects.push({
+            ...project,
+            description: tailoredDescription.length > 0 ? tailoredDescription : project.description
+          });
+          
+        } catch (error) {
+          console.error(`Error tailoring project ${project.name}:`, error);
+          // If there's an error, keep the original project
+          tailoredProjects.push(project);
+        }
+      }
+      
+      tailoredResume.projects = tailoredProjects;
+      console.log("Projects tailored successfully");
+    }
+    
+    // We don't modify education - just keep the original
+    
+    console.log("Resume tailoring completed successfully");
+    return tailoredResume;
+    
   } catch (error) {
-    console.error("Error parsing Gemini response:", error);
-    console.log("Using original resume as fallback");
-    return originalResume;
+    console.error("Error in overall tailoring process:", error);
+    // Return the original resume as fallback in case of errors
+    return resume;
   }
-}
-
-/**
- * Extract JSON from text that might contain markdown or other formatting
- */
-function extractJsonFromText(text: string): string {
-  // Try to extract JSON from code blocks
-  const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)\s*```/g;
-  const inlineCodeRegex = /`([\s\S]*?)`/g;
-  
-  let codeBlockMatches = codeBlockRegex.exec(text);
-  while (codeBlockMatches !== null) {
-    const potentialJson = codeBlockMatches[1].trim();
-    if (potentialJson.startsWith('{') && potentialJson.endsWith('}')) {
-      return potentialJson;
-    }
-    codeBlockMatches = codeBlockRegex.exec(text);
-  }
-  
-  let inlineCodeMatches = inlineCodeRegex.exec(text);
-  while (inlineCodeMatches !== null) {
-    const potentialJson = inlineCodeMatches[1].trim();
-    if (potentialJson.startsWith('{') && potentialJson.endsWith('}')) {
-      return potentialJson;
-    }
-    inlineCodeMatches = inlineCodeRegex.exec(text);
-  }
-  
-  // If no valid JSON found in code blocks, try to extract it directly
-  const directJsonMatch = text.match(/\{[\s\S]*\}/);
-  if (directJsonMatch) {
-    return directJsonMatch[0];
-  }
-  
-  throw new Error("Could not locate valid JSON in the response");
-}
-
-/**
- * Clean JSON string to fix common issues
- */
-function cleanJsonString(jsonString: string): string {
-  return jsonString
-    .replace(/,\s*]/g, "]")                  // Remove trailing commas in arrays
-    .replace(/,\s*}/g, "}")                  // Remove trailing commas in objects
-    .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?\s*:/g, '"$2":') // Ensure property names are properly quoted
-    .replace(/:\s*'([^']*)'/g, ':"$1"')      // Replace single quotes with double quotes for values
-    .replace(/\\/g, "\\\\")                  // Escape backslashes
-    .replace(/\\"/g, '\\\\"')                // Handle nested quotes
-    .replace(/\n/g, " ")                     // Replace newlines with spaces
-    .replace(/\r/g, "")                      // Remove carriage returns
-    .replace(/\t/g, " ")                     // Replace tabs with spaces
-    .replace(/\\n/g, " ")                    // Replace escaped newlines with spaces
-    .replace(/\s{2,}/g, " ")                 // Replace multiple spaces with a single space
-    .replace(/,\s*,/g, ",")                  // Remove consecutive commas
-    .replace(/\[\s*,/g, "[")                 // Fix arrays starting with comma
-    .replace(/,\s*\]/g, "]");                // Fix arrays ending with comma
-}
-
-/**
- * Fix JSON string by adding missing brackets and braces
- */
-function fixJsonString(jsonString: string): string {
-  // Try to fix missing/extra brackets
-  let fixed = jsonString;
-  const openBraces = (fixed.match(/\{/g) || []).length;
-  const closeBraces = (fixed.match(/\}/g) || []).length;
-  const openBrackets = (fixed.match(/\[/g) || []).length;
-  const closeBrackets = (fixed.match(/\]/g) || []).length;
-  
-  // Add missing closing braces
-  if (openBraces > closeBraces) {
-    fixed = fixed + "}".repeat(openBraces - closeBraces);
-  }
-  
-  // Add missing closing brackets
-  if (openBrackets > closeBrackets) {
-    fixed = fixed + "]".repeat(openBrackets - closeBrackets);
-  }
-  
-  return fixed;
-}
-
-/**
- * Process parsed resume data to ensure all required fields exist
- */
-function processResumeData(tailoredResume: ResumeData, originalResume: ResumeData): ResumeData {
-  // Create a complete resume with all required fields
-  const completeResume: ResumeData = {
-    contact: {
-      name: "",
-      location: "",
-      email: "",
-      phone: "",
-      linkedin: "",
-      github: ""
-    },
-    summary: "",
-    experience: [],
-    education: [],
-    skills: {
-      languages: [],
-      frameworks: [],
-      tools: [],
-      concepts: []
-    },
-    projects: []
-  };
-  
-  // Use the original contact information as requested
-  completeResume.contact = originalResume.contact;
-  
-  // For other fields, use the tailored data if available, otherwise use original
-  completeResume.summary = tailoredResume.summary || originalResume.summary;
-  
-  // Handle experience
-  if (Array.isArray(tailoredResume.experience) && tailoredResume.experience.length > 0) {
-    completeResume.experience = tailoredResume.experience.map(exp => ({
-      title: exp.title || "",
-      company: exp.company || "",
-      location: exp.location || "",
-      startDate: exp.startDate || "",
-      endDate: exp.endDate || "",
-      responsibilities: Array.isArray(exp.responsibilities) ? exp.responsibilities : []
-    }));
-  } else {
-    completeResume.experience = originalResume.experience;
-  }
-  
-  // Handle education
-  if (Array.isArray(tailoredResume.education) && tailoredResume.education.length > 0) {
-    completeResume.education = tailoredResume.education.map(edu => ({
-      degree: edu.degree || "",
-      institution: edu.institution || "",
-      years: edu.years || "",
-      gpa: edu.gpa || ""
-    }));
-  } else {
-    completeResume.education = originalResume.education;
-  }
-  
-  // Handle skills
-  if (tailoredResume.skills) {
-    completeResume.skills = {
-      languages: Array.isArray(tailoredResume.skills.languages) ? tailoredResume.skills.languages : originalResume.skills.languages,
-      frameworks: Array.isArray(tailoredResume.skills.frameworks) ? tailoredResume.skills.frameworks : originalResume.skills.frameworks,
-      tools: Array.isArray(tailoredResume.skills.tools) ? tailoredResume.skills.tools : originalResume.skills.tools,
-      concepts: Array.isArray(tailoredResume.skills.concepts) ? tailoredResume.skills.concepts : originalResume.skills.concepts
-    };
-  } else {
-    completeResume.skills = originalResume.skills;
-  }
-  
-  // Handle projects
-  if (Array.isArray(tailoredResume.projects) && tailoredResume.projects.length > 0) {
-    completeResume.projects = tailoredResume.projects.map(proj => ({
-      name: proj.name || "",
-      description: Array.isArray(proj.description) ? proj.description : []
-    }));
-  } else {
-    completeResume.projects = originalResume.projects;
-  }
-  
-  return completeResume;
 }
