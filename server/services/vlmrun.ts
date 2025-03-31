@@ -55,38 +55,88 @@ export async function parseResume(fileBuffer: Buffer, apiKey: string): Promise<R
  * @returns Structured resume data
  */
 function parseVlmResponse(response: any): ResumeData {
-  // Placeholder for actual VLM Run response parsing
-  // In a real implementation, this would parse the JSON structure returned by VLM Run
+  // Log the response for debugging
+  console.log("VLM Run response:", JSON.stringify(response).substring(0, 500) + "...");
   
-  // For demonstration, we'll return a structured resume
-  // In production, this would be replaced with actual parsing logic
-  return {
+  // Create default resume structure with empty fields
+  const defaultResume: ResumeData = {
     contact: {
-      name: extractValue(response, "name") || "",
-      location: extractValue(response, "location") || "",
-      email: extractValue(response, "email") || "",
-      phone: extractValue(response, "phone") || "",
-      linkedin: extractValue(response, "linkedin") || "",
-      github: extractValue(response, "github") || "",
+      name: "",
+      location: "",
+      email: "",
+      phone: "",
+      linkedin: "",
+      github: "",
     },
-    summary: extractValue(response, "summary") || "",
-    experience: extractExperiences(response),
-    education: extractEducation(response),
+    summary: "",
+    experience: [],
+    education: [],
     skills: {
-      languages: extractSkills(response, "languages"),
-      frameworks: extractSkills(response, "frameworks"),
-      tools: extractSkills(response, "tools"),
-      concepts: extractSkills(response, "concepts"),
+      languages: [],
+      frameworks: [],
+      tools: [],
+      concepts: [],
     },
-    projects: extractProjects(response),
+    projects: [],
   };
+  
+  // Parse if response exists, otherwise return default structure
+  if (!response) {
+    console.warn("Empty VLM Run response, returning default structure");
+    return defaultResume;
+  }
+  
+  try {
+    return {
+      contact: {
+        name: extractValue(response, "name") || extractValue(response, "contact.name") || "",
+        location: extractValue(response, "location") || extractValue(response, "contact.location") || "",
+        email: extractValue(response, "email") || extractValue(response, "contact.email") || "",
+        phone: extractValue(response, "phone") || extractValue(response, "contact.phone") || "",
+        linkedin: extractValue(response, "linkedin") || extractValue(response, "contact.linkedin") || "",
+        github: extractValue(response, "github") || extractValue(response, "contact.github") || "",
+      },
+      summary: extractValue(response, "summary") || "",
+      experience: extractExperiences(response),
+      education: extractEducation(response),
+      skills: {
+        languages: extractSkills(response, "languages"),
+        frameworks: extractSkills(response, "frameworks"),
+        tools: extractSkills(response, "tools"),
+        concepts: extractSkills(response, "concepts"),
+      },
+      projects: extractProjects(response),
+    };
+  } catch (error) {
+    console.error("Error parsing VLM Run response:", error);
+    return defaultResume;
+  }
 }
 
 // Helper functions to extract data from VLM response
 function extractValue(response: any, field: string): string {
   try {
-    // This would be replaced with actual field extraction logic based on VLM Run's response structure
-    return response[field] || "";
+    if (!response) return "";
+    
+    // Check if this is a nested field (contains a dot)
+    if (field.includes('.')) {
+      const parts = field.split('.');
+      let current = response;
+      
+      // Navigate through the nested properties
+      for (const part of parts) {
+        if (current && typeof current === 'object' && part in current) {
+          current = current[part];
+        } else {
+          return "";
+        }
+      }
+      
+      return typeof current === 'string' ? current : "";
+    }
+    
+    // Direct field access
+    return typeof response[field] === 'string' ? response[field] : "";
   } catch (error) {
     return "";
   }

@@ -13,55 +13,144 @@ export function ResumeSection({ title, sectionId, content }: ResumeSectionProps)
   const [isCopied, setIsCopied] = useState(false);
   
   const handleCopy = () => {
+    // Check if content is empty
+    const isEmptyContent = () => {
+      if (typeof content === 'undefined' || content === null) return true;
+      if (typeof content === 'string') return content.trim() === '';
+      if (Array.isArray(content)) return content.length === 0;
+      if (typeof content === 'object') return Object.keys(content).length === 0;
+      return false;
+    };
+    
+    // Show message if trying to copy empty content
+    if (isEmptyContent()) {
+      toast({
+        title: "Nothing to copy",
+        description: `No content available for ${title}`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
     // Convert content to string representation
     let textToCopy = '';
     
     if (typeof content === 'string') {
-      textToCopy = content;
+      textToCopy = content.trim();
     } else if (sectionId === 'contact') {
       const contact = content as any;
-      textToCopy = [
-        contact.name,
-        contact.location,
-        `${contact.email} | ${contact.phone}`,
-        `${contact.linkedin} | ${contact.github}`,
-      ].join('\n');
+      const contactLines = [];
+      
+      if (contact.name) contactLines.push(contact.name);
+      if (contact.location) contactLines.push(contact.location);
+      
+      const contactInfo = [];
+      if (contact.email) contactInfo.push(contact.email);
+      if (contact.phone) contactInfo.push(contact.phone);
+      if (contactInfo.length > 0) contactLines.push(contactInfo.join(' | '));
+      
+      const links = [];
+      if (contact.linkedin) links.push(contact.linkedin);
+      if (contact.github) links.push(contact.github);
+      if (links.length > 0) contactLines.push(links.join(' | '));
+      
+      textToCopy = contactLines.join('\n');
     } else if (sectionId === 'experience') {
-      const experience = content as any[];
-      textToCopy = experience.map(exp => {
-        return [
-          `${exp.title}`,
-          `${exp.company}, ${exp.location} | ${exp.startDate} - ${exp.endDate}`,
-          ...exp.responsibilities.map(r => `• ${r}`)
-        ].join('\n');
-      }).join('\n\n');
+      if (Array.isArray(content)) {
+        const experience = content as any[];
+        textToCopy = experience.map(exp => {
+          const expLines = [];
+          
+          if (exp.title) expLines.push(exp.title);
+          
+          const companyDetails = [];
+          if (exp.company) companyDetails.push(exp.company);
+          if (exp.location) companyDetails.push(exp.location);
+          
+          const dateRange = [];
+          if (exp.startDate) dateRange.push(exp.startDate);
+          if (exp.endDate) dateRange.push(exp.endDate);
+          
+          const companyLine = [];
+          if (companyDetails.length > 0) companyLine.push(companyDetails.join(', '));
+          if (dateRange.length > 0) companyLine.push(dateRange.join(' - '));
+          
+          if (companyLine.length > 0) expLines.push(companyLine.join(' | '));
+          
+          if (Array.isArray(exp.responsibilities) && exp.responsibilities.length > 0) {
+            expLines.push(...exp.responsibilities.map((r: string) => `• ${r}`));
+          }
+          
+          return expLines.join('\n');
+        }).join('\n\n');
+      }
     } else if (sectionId === 'education') {
-      const education = content as any[];
-      textToCopy = education.map(edu => {
-        return [
-          `${edu.degree}`,
-          `${edu.institution} | ${edu.years}`,
-          `GPA: ${edu.gpa}`
-        ].join('\n');
-      }).join('\n\n');
+      if (Array.isArray(content)) {
+        const education = content as any[];
+        textToCopy = education.map(edu => {
+          const eduLines = [];
+          
+          if (edu.degree) eduLines.push(edu.degree);
+          
+          const instLine = [];
+          if (edu.institution) instLine.push(edu.institution);
+          if (edu.years) instLine.push(edu.years);
+          if (instLine.length > 0) eduLines.push(instLine.join(' | '));
+          
+          if (edu.gpa) eduLines.push(`GPA: ${edu.gpa}`);
+          
+          return eduLines.join('\n');
+        }).join('\n\n');
+      }
     } else if (sectionId === 'skills') {
       const skills = content as any;
-      textToCopy = [
-        `Languages: ${skills.languages.join(', ')}`,
-        `Frameworks/Libraries: ${skills.frameworks.join(', ')}`,
-        `Tools: ${skills.tools.join(', ')}`,
-        `Concepts: ${skills.concepts.join(', ')}`
-      ].join('\n');
+      const skillLines = [];
+      
+      if (Array.isArray(skills.languages) && skills.languages.length > 0) {
+        skillLines.push(`Languages: ${skills.languages.join(', ')}`);
+      }
+      
+      if (Array.isArray(skills.frameworks) && skills.frameworks.length > 0) {
+        skillLines.push(`Frameworks/Libraries: ${skills.frameworks.join(', ')}`);
+      }
+      
+      if (Array.isArray(skills.tools) && skills.tools.length > 0) {
+        skillLines.push(`Tools: ${skills.tools.join(', ')}`);
+      }
+      
+      if (Array.isArray(skills.concepts) && skills.concepts.length > 0) {
+        skillLines.push(`Concepts: ${skills.concepts.join(', ')}`);
+      }
+      
+      textToCopy = skillLines.join('\n');
     } else if (sectionId === 'projects') {
-      const projects = content as any[];
-      textToCopy = projects.map(proj => {
-        return [
-          `${proj.name}`,
-          ...proj.description.map(d => `• ${d}`)
-        ].join('\n');
-      }).join('\n\n');
+      if (Array.isArray(content)) {
+        const projects = content as any[];
+        textToCopy = projects.map(proj => {
+          const projLines = [];
+          
+          if (proj.name) projLines.push(proj.name);
+          
+          if (Array.isArray(proj.description) && proj.description.length > 0) {
+            projLines.push(...proj.description.map((d: string) => `• ${d}`));
+          }
+          
+          return projLines.join('\n');
+        }).join('\n\n');
+      }
     } else {
+      // Default to JSON
       textToCopy = JSON.stringify(content, null, 2);
+    }
+    
+    // If after all processing, there's still no text, show error
+    if (!textToCopy.trim()) {
+      toast({
+        title: "Nothing to copy",
+        description: `No content available for ${title}`,
+        variant: "destructive"
+      });
+      return;
     }
     
     // Create a temporary textarea element to copy the text
@@ -88,19 +177,70 @@ export function ResumeSection({ title, sectionId, content }: ResumeSectionProps)
   };
   
   const renderContent = () => {
+    // Add a "not available" message when content is empty
+    const renderEmptyState = () => (
+      <div className="text-sm text-gray-500 italic">
+        <p>No content available for this section.</p>
+      </div>
+    );
+    
+    // Check if the content is empty (by type)
+    const isEmptyContent = () => {
+      if (typeof content === 'undefined' || content === null) return true;
+      if (typeof content === 'string') return content.trim() === '';
+      if (Array.isArray(content)) return content.length === 0;
+      if (typeof content === 'object') return Object.keys(content).length === 0;
+      return false;
+    };
+    
+    // Return empty state if content is empty
+    if (isEmptyContent()) {
+      return renderEmptyState();
+    }
+    
     if (sectionId === 'contact') {
       const contact = content as any;
+      
+      // Check if all contact fields are empty
+      const allEmpty = 
+        !contact.name && 
+        !contact.location && 
+        !contact.email && 
+        !contact.phone && 
+        !contact.linkedin && 
+        !contact.github;
+        
+      if (allEmpty) return renderEmptyState();
+      
       return (
         <div className="text-sm text-gray-700 space-y-2">
-          <p className="font-medium">{contact.name}</p>
-          <p>{contact.location}</p>
-          <p>{contact.email} | {contact.phone}</p>
-          <p>{contact.linkedin} | {contact.github}</p>
+          {contact.name && <p className="font-medium">{contact.name}</p>}
+          {contact.location && <p>{contact.location}</p>}
+          
+          {/* Only show the email/phone line if at least one exists */}
+          {(contact.email || contact.phone) && (
+            <p>
+              {contact.email}
+              {contact.email && contact.phone && " | "}
+              {contact.phone}
+            </p>
+          )}
+          
+          {/* Only show the linkedin/github line if at least one exists */}
+          {(contact.linkedin || contact.github) && (
+            <p>
+              {contact.linkedin}
+              {contact.linkedin && contact.github && " | "}
+              {contact.github}
+            </p>
+          )}
         </div>
       );
     } 
     
     if (sectionId === 'summary') {
+      if (!content || content.trim() === '') return renderEmptyState();
+      
       return (
         <div className="text-sm text-gray-700">
           <p>{content}</p>
@@ -109,20 +249,33 @@ export function ResumeSection({ title, sectionId, content }: ResumeSectionProps)
     }
     
     if (sectionId === 'experience') {
+      if (!Array.isArray(content) || content.length === 0) return renderEmptyState();
+      
       return (
         <div className="text-sm text-gray-700 space-y-4">
           {content.map((experience: any, index: number) => (
             <div key={index} className="space-y-1">
               <div className="flex justify-between">
-                <p className="font-medium">{experience.title}</p>
-                <p className="text-sm text-gray-500">{experience.startDate} - {experience.endDate}</p>
+                <p className="font-medium">{experience.title || 'Untitled Position'}</p>
+                <p className="text-sm text-gray-500">
+                  {experience.startDate || ''}
+                  {experience.startDate && experience.endDate && " - "}
+                  {experience.endDate || ''}
+                </p>
               </div>
-              <p className="text-sm">{experience.company}, {experience.location}</p>
-              <ul className="list-disc pl-5 space-y-1">
-                {experience.responsibilities.map((responsibility: string, respIndex: number) => (
-                  <li key={respIndex}>{responsibility}</li>
-                ))}
-              </ul>
+              <p className="text-sm">
+                {experience.company || ''}
+                {experience.company && experience.location && ", "}
+                {experience.location || ''}
+              </p>
+              
+              {Array.isArray(experience.responsibilities) && experience.responsibilities.length > 0 && (
+                <ul className="list-disc pl-5 space-y-1">
+                  {experience.responsibilities.map((responsibility: string, respIndex: number) => (
+                    <li key={respIndex}>{responsibility}</li>
+                  ))}
+                </ul>
+              )}
             </div>
           ))}
         </div>
@@ -130,16 +283,18 @@ export function ResumeSection({ title, sectionId, content }: ResumeSectionProps)
     }
     
     if (sectionId === 'education') {
+      if (!Array.isArray(content) || content.length === 0) return renderEmptyState();
+      
       return (
         <div className="text-sm text-gray-700 space-y-3">
           {content.map((education: any, index: number) => (
             <div key={index} className="space-y-1">
               <div className="flex justify-between">
-                <p className="font-medium">{education.degree}</p>
-                <p className="text-sm text-gray-500">{education.years}</p>
+                <p className="font-medium">{education.degree || 'Degree not specified'}</p>
+                {education.years && <p className="text-sm text-gray-500">{education.years}</p>}
               </div>
-              <p>{education.institution}</p>
-              <p>GPA: {education.gpa}</p>
+              {education.institution && <p>{education.institution}</p>}
+              {education.gpa && <p>GPA: {education.gpa}</p>}
             </div>
           ))}
         </div>
@@ -147,35 +302,56 @@ export function ResumeSection({ title, sectionId, content }: ResumeSectionProps)
     }
     
     if (sectionId === 'skills') {
+      if (!content || !content.languages && !content.frameworks && !content.tools && !content.concepts) {
+        return renderEmptyState();
+      }
+      
       return (
         <div className="text-sm text-gray-700">
           <div className="space-y-2">
-            <p><span className="font-medium">Languages:</span> {content.languages.join(', ')}</p>
-            <p><span className="font-medium">Frameworks/Libraries:</span> {content.frameworks.join(', ')}</p>
-            <p><span className="font-medium">Tools:</span> {content.tools.join(', ')}</p>
-            <p><span className="font-medium">Concepts:</span> {content.concepts.join(', ')}</p>
+            {Array.isArray(content.languages) && content.languages.length > 0 && (
+              <p><span className="font-medium">Languages:</span> {content.languages.join(', ')}</p>
+            )}
+            
+            {Array.isArray(content.frameworks) && content.frameworks.length > 0 && (
+              <p><span className="font-medium">Frameworks/Libraries:</span> {content.frameworks.join(', ')}</p>
+            )}
+            
+            {Array.isArray(content.tools) && content.tools.length > 0 && (
+              <p><span className="font-medium">Tools:</span> {content.tools.join(', ')}</p>
+            )}
+            
+            {Array.isArray(content.concepts) && content.concepts.length > 0 && (
+              <p><span className="font-medium">Concepts:</span> {content.concepts.join(', ')}</p>
+            )}
           </div>
         </div>
       );
     }
     
     if (sectionId === 'projects') {
+      if (!Array.isArray(content) || content.length === 0) return renderEmptyState();
+      
       return (
         <div className="text-sm text-gray-700 space-y-4">
           {content.map((project: any, index: number) => (
             <div key={index} className="space-y-1">
-              <p className="font-medium">{project.name}</p>
-              <ul className="list-disc pl-5 space-y-1">
-                {project.description.map((desc: string, descIndex: number) => (
-                  <li key={descIndex}>{desc}</li>
-                ))}
-              </ul>
+              <p className="font-medium">{project.name || 'Untitled Project'}</p>
+              
+              {Array.isArray(project.description) && project.description.length > 0 && (
+                <ul className="list-disc pl-5 space-y-1">
+                  {project.description.map((desc: string, descIndex: number) => (
+                    <li key={descIndex}>{desc}</li>
+                  ))}
+                </ul>
+              )}
             </div>
           ))}
         </div>
       );
     }
     
+    // Default fallback to JSON representation
     return <pre className="text-sm text-gray-700">{JSON.stringify(content, null, 2)}</pre>;
   };
   

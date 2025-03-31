@@ -58,32 +58,94 @@ export async function tailorResume(
  */
 function parseTailoredResume(responseText: string, originalResume: ResumeData): ResumeData {
   try {
+    // Log the raw response for debugging
+    console.log("Raw Gemini response:", responseText.substring(0, 500) + "...");
+    
     // Extract JSON from response text
     // This handles cases where Gemini might wrap the JSON in backticks or add explanations
-    const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/) || 
-                      responseText.match(/```\n([\s\S]*?)\n```/) ||
-                      responseText.match(/\{[\s\S]*\}/);
-                      
+    let jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/) || 
+                    responseText.match(/```\n([\s\S]*?)\n```/);
+    
     let jsonText;
     if (jsonMatch) {
-      jsonText = jsonMatch[0].startsWith('{') ? jsonMatch[0] : jsonMatch[1];
+      jsonText = jsonMatch[1];
     } else {
-      jsonText = responseText;
+      // Try to find the JSON object directly
+      const startIdx = responseText.indexOf('{');
+      const endIdx = responseText.lastIndexOf('}');
+      
+      if (startIdx >= 0 && endIdx >= 0 && endIdx > startIdx) {
+        jsonText = responseText.substring(startIdx, endIdx + 1);
+      } else {
+        throw new Error("Could not locate valid JSON in the response");
+      }
     }
+    
+    // Clean the JSON text - this helps fix common issues that cause parsing to fail
+    jsonText = jsonText
+      .replace(/,\s*]/g, "]") // Remove trailing commas in arrays
+      .replace(/,\s*}/g, "}") // Remove trailing commas in objects
+      .replace(/\n/g, " ")    // Replace newlines with spaces
+      .replace(/\\"/g, '"')   // Handle escaped quotes
+      .replace(/\\n/g, " ");  // Replace escaped newlines with spaces
+    
+    // Log the cleaned JSON text for debugging
+    console.log("Cleaned JSON text:", jsonText.substring(0, 200) + "...");
     
     // Parse the JSON
     const tailoredResume = JSON.parse(jsonText) as ResumeData;
     
-    // Validate the structure by ensuring all required fields exist
-    // If any field is missing, use the original data as fallback
-    if (!tailoredResume.contact) tailoredResume.contact = originalResume.contact;
-    if (!tailoredResume.summary) tailoredResume.summary = originalResume.summary;
-    if (!tailoredResume.experience) tailoredResume.experience = originalResume.experience;
-    if (!tailoredResume.education) tailoredResume.education = originalResume.education;
-    if (!tailoredResume.skills) tailoredResume.skills = originalResume.skills;
-    if (!tailoredResume.projects) tailoredResume.projects = originalResume.projects;
+    // Create a complete resume with all required fields
+    const completeResume: ResumeData = {
+      contact: {
+        name: "",
+        location: "",
+        email: "",
+        phone: "",
+        linkedin: "",
+        github: ""
+      },
+      summary: "",
+      experience: [],
+      education: [],
+      skills: {
+        languages: [],
+        frameworks: [],
+        tools: [],
+        concepts: []
+      },
+      projects: []
+    };
     
-    return tailoredResume;
+    // Merge the tailored resume with the complete resume structure
+    // This ensures all required fields exist
+    if (tailoredResume.contact) {
+      completeResume.contact = {
+        ...completeResume.contact,
+        ...tailoredResume.contact
+      };
+    } else {
+      completeResume.contact = originalResume.contact;
+    }
+    
+    completeResume.summary = tailoredResume.summary || originalResume.summary;
+    completeResume.experience = tailoredResume.experience || originalResume.experience;
+    completeResume.education = tailoredResume.education || originalResume.education;
+    
+    if (tailoredResume.skills) {
+      completeResume.skills = {
+        languages: tailoredResume.skills.languages || originalResume.skills.languages,
+        frameworks: tailoredResume.skills.frameworks || originalResume.skills.frameworks,
+        tools: tailoredResume.skills.tools || originalResume.skills.tools,
+        concepts: tailoredResume.skills.concepts || originalResume.skills.concepts
+      };
+    } else {
+      completeResume.skills = originalResume.skills;
+    }
+    
+    completeResume.projects = tailoredResume.projects || originalResume.projects;
+    
+    return completeResume;
   } catch (error) {
     console.error("Error parsing Gemini response:", error);
     console.log("Using original resume as fallback");
