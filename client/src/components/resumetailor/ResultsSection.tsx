@@ -7,6 +7,42 @@ interface ResultsSectionProps {
   onRestart: () => void;
 }
 
+// Mapping for section names to make them more readable
+const sectionTitles: Record<string, string> = {
+  contact: "Contact Information",
+  summary: "Professional Summary",
+  experience: "Work Experience",
+  workExperience: "Work Experience",
+  education: "Education",
+  skills: "Skills",
+  projects: "Projects",
+  publications: "Publications",
+  conferences: "Conferences",
+  volunteer_work: "Volunteer Work",
+  additionalSections: "Additional Sections",
+  technical_skills: "Technical Skills",
+  certifications: "Certifications",
+  languages: "Languages",
+  interests: "Interests",
+  achievements: "Achievements",
+  awards: "Awards & Recognition",
+  leadership: "Leadership Experience",
+  extracurricular: "Extracurricular Activities",
+  hobbies: "Hobbies & Interests",
+  research: "Research Experience",
+  relevant_courses: "Relevant Courses",
+  coursework: "Coursework",
+  portfolio: "Portfolio Projects",
+  workshops: "Workshops & Training",
+  community_service: "Community Service",
+  military: "Military Service",
+  patents: "Patents",
+  references: "References",
+  speaking_engagements: "Speaking Engagements",
+  affiliations: "Professional Affiliations",
+  volunteer_experience: "Volunteer Experience"
+};
+
 export function ResultsSection({ tailoredResume, onRestart }: ResultsSectionProps) {
   const handleDownload = () => {
     const dataStr = JSON.stringify(tailoredResume, null, 2);
@@ -18,6 +54,44 @@ export function ResultsSection({ tailoredResume, onRestart }: ResultsSectionProp
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
+  };
+
+  // Format a section key into a readable title
+  const formatSectionTitle = (key: string): string => {
+    // Check if we have a pre-defined title for this section
+    if (sectionTitles[key]) {
+      return sectionTitles[key];
+    }
+    
+    // Otherwise, format the key name by:
+    // 1. Converting underscores to spaces
+    // 2. Capitalizing each word
+    return key
+      .replace(/_/g, ' ')
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  };
+
+  // Determine if a section should be displayed based on its content
+  const shouldDisplaySection = (key: string, value: any): boolean => {
+    if (value === null || value === undefined) {
+      return false;
+    }
+    
+    if (typeof value === 'string') {
+      return value.trim() !== '';
+    }
+    
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+    
+    if (typeof value === 'object') {
+      return Object.keys(value).length > 0;
+    }
+    
+    return false;
   };
 
   return (
@@ -42,81 +116,56 @@ export function ResultsSection({ tailoredResume, onRestart }: ResultsSectionProp
       </div>
 
       <div className="space-y-6">
-        {/* Contact Information Section */}
-        <ResumeSection
-          title="Contact Information"
-          sectionId="contact"
-          content={tailoredResume.contact}
-        />
+        {/* Dynamically render all resume sections based on what's available in the data */}
+        {Object.entries(tailoredResume).map(([key, value]) => {
+          // Skip the additionalSections property as we'll handle it separately
+          if (key === 'additionalSections') {
+            return null;
+          }
+          
+          // Only display sections that have content
+          if (!shouldDisplaySection(key, value)) {
+            return null;
+          }
+          
+          // Special handling for workExperience vs experience - avoid displaying both
+          if (key === 'experience' && tailoredResume.workExperience && 
+              Array.isArray(tailoredResume.workExperience) && 
+              tailoredResume.workExperience.length > 0) {
+            return null;
+          }
+          
+          // Special case for technical_skills (which should be rendered like 'skills')
+          const sectionId = key === 'technical_skills' ? 'skills' : key;
+          
+          return (
+            <ResumeSection
+              key={key}
+              title={formatSectionTitle(key)}
+              sectionId={sectionId}
+              content={value}
+            />
+          );
+        })}
         
-        {/* Summary Section */}
-        <ResumeSection
-          title="Professional Summary"
-          sectionId="summary"
-          content={tailoredResume.summary}
-        />
-        
-        {/* Choose either standard Experience or specialized Work Experience section */}
-        {(!tailoredResume.workExperience || tailoredResume.workExperience.length === 0) ? (
-          <ResumeSection
-            title="Work Experience" 
-            sectionId="experience"
-            content={tailoredResume.experience}
-          />
-        ) : (
-          <ResumeSection
-            title="Work Experience"
-            sectionId="workExperience"
-            content={tailoredResume.workExperience}
-          />
-        )}
-        
-        {/* Education Section */}
-        <ResumeSection
-          title="Education"
-          sectionId="education"
-          content={tailoredResume.education}
-        />
-        
-        {/* Skills Section */}
-        <ResumeSection
-          title="Skills"
-          sectionId="skills"
-          content={tailoredResume.skills}
-        />
-        
-        {/* Projects Section */}
-        <ResumeSection
-          title="Projects"
-          sectionId="projects"
-          content={tailoredResume.projects}
-        />
-        
-        {/* Additional Sections (if present) */}
+        {/* Handle additional sections if present */}
         {tailoredResume.additionalSections && 
           typeof tailoredResume.additionalSections === 'object' && 
           Object.keys(tailoredResume.additionalSections).length > 0 && 
           Object.entries(tailoredResume.additionalSections).map(([sectionName, items]) => {
-            console.log("Rendering additional section:", sectionName, items);
-            return (
-              <ResumeSection
-                key={sectionName}
-                title={sectionName.split('_').map(word => 
-                  word.charAt(0).toUpperCase() + word.slice(1)
-                ).join(' ')}
-                sectionId={`additionalSection-${sectionName}`}
-                content={items}
-              />
-            );
+            if (Array.isArray(items) && items.length > 0) {
+              return (
+                <ResumeSection
+                  key={sectionName}
+                  title={formatSectionTitle(sectionName)}
+                  sectionId={`additionalSection-${sectionName}`}
+                  content={items}
+                />
+              );
+            }
+            return null;
           })
         }
-        
-        {/* For debugging - add test section */}
-        <ResumeSection
-          title="Certifications (Test)"
-          sectionId="additionalSection-certifications"
-          content={["AWS Certified Developer", "Microsoft Certified Professional"]}
-        />
       </div>
     </section>
   );

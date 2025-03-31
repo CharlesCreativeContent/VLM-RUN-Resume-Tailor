@@ -307,6 +307,129 @@ export async function tailorResume(
     
     // We don't modify education - just keep the original
     
+    // Process any other dynamic sections that are arrays of strings or objects
+    // This handles resume sections that didn't exist when we originally built the app
+    for (const [key, value] of Object.entries(resume)) {
+      // Skip already processed sections
+      if ([
+        'contact', 'summary', 'experience', 'workExperience', 
+        'education', 'skills', 'projects', 'additionalSections'
+      ].includes(key)) {
+        continue;
+      }
+      
+      // Handle array sections that might contain relevant information
+      if (Array.isArray(value) && value.length > 0) {
+        console.log(`Tailoring additional section: ${key}...`);
+        
+        try {
+          // For arrays of strings
+          if (typeof value[0] === 'string') {
+            const arrayPrompt = `
+            Tailor these ${key.replace(/_/g, ' ')} items to be more relevant for the job:
+            
+            Original items:
+            ${value.join('\n')}
+            
+            Job details to tailor for:
+            ${jobDetails}
+            
+            Provide ONLY a list of improved items - one per line, without numbers, quotes, or any additional formatting.
+            Focus on highlighting aspects that match the job requirements.
+            Keep each item concise and professional.
+            Maintain approximately the same number of items.
+            `;
+            
+            const result = await model.generateContent(arrayPrompt);
+            const response = await result.response;
+            const tailoredItems = response.text()
+              .split('\n')
+              .filter(line => line.trim())
+              .map(line => line.trim().replace(/^[•\-\*]\s*/, ''));
+            
+            if (tailoredItems.length > 0) {
+              tailoredResume[key] = tailoredItems;
+            }
+          }
+          // For arrays of objects (like experiences)
+          else if (typeof value[0] === 'object' && value[0] !== null) {
+            const tailoredItems = [];
+            
+            for (const item of value) {
+              // Find the main text content field (description, responsibilities, etc.)
+              let contentField = '';
+              let contentValue: string[] = [];
+              
+              // Identify which field contains the descriptive text
+              for (const [fieldKey, fieldValue] of Object.entries(item)) {
+                if (Array.isArray(fieldValue) && 
+                    fieldValue.length > 0 && 
+                    typeof fieldValue[0] === 'string' &&
+                    ['description', 'responsibilities', 'achievements', 'details', 'bullets'].includes(fieldKey)) {
+                  contentField = fieldKey;
+                  contentValue = fieldValue;
+                  break;
+                }
+              }
+              
+              // If we found a valid content field, tailor it
+              if (contentField && contentValue.length > 0) {
+                const itemPrompt = `
+                Tailor this ${key.replace(/_/g, ' ')} item to be more relevant for the job:
+                
+                ${Object.entries(item)
+                  .filter(([k, v]) => k !== contentField && typeof v === 'string' && v.trim())
+                  .map(([k, v]) => `${k.charAt(0).toUpperCase() + k.slice(1)}: ${v}`)
+                  .join('\n')}
+                
+                Original ${contentField}:
+                ${contentValue.join('\n')}
+                
+                Job details to tailor for:
+                ${jobDetails}
+                
+                Provide ONLY a list of improved bullet points - one per line, without numbers, quotes, or any additional formatting.
+                Focus on highlighting aspects that match the job requirements.
+                Keep each bullet point concise and professional.
+                Maintain approximately the same number of bullet points.
+                `;
+                
+                try {
+                  const result = await model.generateContent(itemPrompt);
+                  const response = await result.response;
+                  const tailoredContent = response.text()
+                    .split('\n')
+                    .filter(line => line.trim())
+                    .map(line => line.trim().replace(/^[•\-\*]\s*/, ''));
+                  
+                  // Create a shallow copy of the item and update just the content field
+                  const tailoredItem = { ...item };
+                  if (tailoredContent.length > 0) {
+                    tailoredItem[contentField] = tailoredContent;
+                  }
+                  
+                  tailoredItems.push(tailoredItem);
+                } catch (error) {
+                  console.error(`Error tailoring ${key} item:`, error);
+                  tailoredItems.push(item); // Keep original on error
+                }
+              } else {
+                // If no content field found, keep the original item
+                tailoredItems.push(item);
+              }
+            }
+            
+            tailoredResume[key] = tailoredItems;
+          }
+          
+          console.log(`Section ${key} tailored successfully`);
+        } catch (error) {
+          console.error(`Error tailoring ${key} section:`, error);
+          // Keep original on error
+        }
+      }
+    }
+    
     console.log("Resume tailoring completed successfully");
     return tailoredResume;
     

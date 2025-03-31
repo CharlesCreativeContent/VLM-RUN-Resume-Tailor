@@ -58,7 +58,7 @@ function parseVlmResponse(response: any): ResumeData {
   // Log the response for debugging
   console.log("VLM Run response:", JSON.stringify(response).substring(0, 500) + "...");
   
-  // Create default resume structure with empty fields
+  // Create a minimal default resume structure (will be extended dynamically)
   const defaultResume: ResumeData = {
     contact: {
       name: "",
@@ -70,7 +70,6 @@ function parseVlmResponse(response: any): ResumeData {
     },
     summary: "",
     experience: [],
-    education: [],
     skills: {
       languages: [],
       frameworks: [],
@@ -78,8 +77,6 @@ function parseVlmResponse(response: any): ResumeData {
       concepts: [],
     },
     projects: [],
-    workExperience: [],
-    additionalSections: {},
   };
   
   // Parse if response exists, otherwise return default structure
@@ -93,94 +90,154 @@ function parseVlmResponse(response: any): ResumeData {
     const vlmData = response.response;
     console.log("VLM Run data structure:", Object.keys(vlmData).join(", "));
     
-    // Extract contact info
-    const contactInfo = vlmData.contact_info || {};
-    const contact = {
-      name: contactInfo.full_name || "",
-      location: contactInfo.address || "",
-      email: contactInfo.email || "",
-      phone: contactInfo.phone || "",
-      linkedin: contactInfo.linkedin || "",
-      github: contactInfo.github || "",
-    };
+    // Initialize a result object that will contain all sections
+    const result: any = {};
     
-    // Extract summary
-    const summary = vlmData.summary || "";
+    // Process contact information
+    if (vlmData.contact_info) {
+      const contactInfo = vlmData.contact_info;
+      result.contact = {
+        name: contactInfo.full_name || "",
+        location: contactInfo.address || "",
+        email: contactInfo.email || "",
+        phone: contactInfo.phone || "",
+        linkedin: contactInfo.linkedin || "",
+        github: contactInfo.github || "",
+      };
+      
+      // Add any additional fields from contact_info that we didn't explicitly map
+      Object.entries(contactInfo).forEach(([key, value]) => {
+        // Skip already mapped fields or empty values
+        if (['full_name', 'address', 'email', 'phone', 'linkedin', 'github'].includes(key) || 
+            !value || 
+            (typeof value === 'string' && value.trim() === '')) {
+          return;
+        }
+        
+        // Add additional field to contact
+        result.contact[key] = value;
+      });
+    } else {
+      result.contact = defaultResume.contact;
+    }
     
-    // Extract experience
-    const experience = (vlmData.experience || []).map((exp: any) => ({
-      title: exp.title || "",
-      company: exp.company || "",
-      location: exp.location || "",
-      startDate: exp.start_date || "",
-      endDate: exp.end_date || "",
-      responsibilities: exp.description ? 
-        (Array.isArray(exp.description) ? exp.description : [exp.description]) : 
-        (exp.responsibilities || []),
-    }));
+    // Process summary
+    if (vlmData.summary) {
+      result.summary = vlmData.summary;
+    } else {
+      result.summary = "";
+    }
     
-    // Extract work experience (added for VLM Run's specific work_experience field)
-    const workExperience = (vlmData.work_experience || []).map((exp: any) => ({
-      company: exp.company || "",
-      position: exp.position || "",
-      startDate: exp.start_date || "",
-      endDate: exp.end_date || "",
-      isCurrent: exp.is_current || false,
-      responsibilities: Array.isArray(exp.responsibilities) ? exp.responsibilities : [],
-      technologies: exp.technologies ? 
-        (Array.isArray(exp.technologies) ? exp.technologies : [exp.technologies]) : [],
-    }));
+    // Process regular experience
+    if (vlmData.experience && Array.isArray(vlmData.experience)) {
+      result.experience = vlmData.experience.map((exp: any) => ({
+        title: exp.title || "",
+        company: exp.company || "",
+        location: exp.location || "",
+        startDate: exp.start_date || "",
+        endDate: exp.end_date || "",
+        responsibilities: exp.description ? 
+          (Array.isArray(exp.description) ? exp.description : [exp.description]) : 
+          (exp.responsibilities || []),
+      }));
+    } else {
+      result.experience = [];
+    }
     
-    // Extract education
-    const education = (vlmData.education || []).map((edu: any) => ({
-      degree: edu.degree || "",
-      institution: edu.institution || "",
-      years: `${edu.start_date || ""} - ${edu.end_date || ""}`,
-      gpa: edu.gpa || "",
-    }));
+    // Process work experience
+    if (vlmData.work_experience && Array.isArray(vlmData.work_experience)) {
+      result.workExperience = vlmData.work_experience.map((exp: any) => ({
+        company: exp.company || "",
+        position: exp.position || "",
+        startDate: exp.start_date || "",
+        endDate: exp.end_date || "",
+        isCurrent: exp.is_current || false,
+        responsibilities: Array.isArray(exp.responsibilities) ? exp.responsibilities : [],
+        technologies: exp.technologies ? 
+          (Array.isArray(exp.technologies) ? exp.technologies : [exp.technologies]) : [],
+      }));
+    }
     
-    // Extract skills
-    const skills = {
-      languages: extractArrayOrSplit(vlmData.skills?.programming_languages || vlmData.programming_languages || []),
-      frameworks: extractArrayOrSplit(vlmData.skills?.frameworks || vlmData.frameworks || []),
-      tools: extractArrayOrSplit(vlmData.skills?.tools || vlmData.tools || []),
-      concepts: extractArrayOrSplit(vlmData.skills?.concepts || vlmData.concepts || []),
-    };
+    // Process education
+    if (vlmData.education && Array.isArray(vlmData.education)) {
+      result.education = vlmData.education.map((edu: any) => ({
+        degree: edu.degree || "",
+        institution: edu.institution || "",
+        years: `${edu.start_date || ""} - ${edu.end_date || ""}`,
+        gpa: edu.gpa || "",
+      }));
+    }
     
-    // Extract projects
-    const projects = (vlmData.projects || []).map((proj: any) => ({
-      name: proj.name || proj.title || "",
-      description: proj.description ? 
-        (Array.isArray(proj.description) ? proj.description : [proj.description]) : [],
-    }));
+    // Process technical skills
+    if (vlmData.technical_skills) {
+      result.technical_skills = vlmData.technical_skills;
+    }
     
-    // Extract additional sections
-    const additionalSections: {[key: string]: string[]} = {};
+    // Process regular skills
+    if (vlmData.skills || 
+        vlmData.programming_languages || 
+        vlmData.frameworks || 
+        vlmData.tools || 
+        vlmData.concepts) {
+      
+      result.skills = {
+        languages: extractArrayOrSplit(vlmData.skills?.programming_languages || vlmData.programming_languages || []),
+        frameworks: extractArrayOrSplit(vlmData.skills?.frameworks || vlmData.frameworks || []),
+        tools: extractArrayOrSplit(vlmData.skills?.tools || vlmData.tools || []),
+        concepts: extractArrayOrSplit(vlmData.skills?.concepts || vlmData.concepts || []),
+      };
+    } else {
+      result.skills = defaultResume.skills;
+    }
+    
+    // Process projects
+    if (vlmData.projects && Array.isArray(vlmData.projects)) {
+      result.projects = vlmData.projects.map((proj: any) => ({
+        name: proj.name || proj.title || "",
+        description: proj.description ? 
+          (Array.isArray(proj.description) ? proj.description : [proj.description]) : [],
+      }));
+    } else {
+      result.projects = [];
+    }
+    
+    // Handle additionalSections property
     if (vlmData.additional_sections && typeof vlmData.additional_sections === 'object') {
+      result.additionalSections = {};
       for (const [key, value] of Object.entries(vlmData.additional_sections)) {
         if (Array.isArray(value)) {
-          additionalSections[key] = value;
+          result.additionalSections[key] = value;
         } else if (typeof value === 'string') {
-          additionalSections[key] = [value];
+          result.additionalSections[key] = [value];
         }
       }
     }
     
-    const resumeData = {
-      contact,
-      summary,
-      experience,
-      education,
-      skills,
-      projects,
-      workExperience: workExperience.length > 0 ? workExperience : undefined,
-      additionalSections: Object.keys(additionalSections).length > 0 ? additionalSections : undefined,
-    };
+    // Handle any other sections that are arrays
+    for (const [key, value] of Object.entries(vlmData)) {
+      // Skip already processed sections
+      if ([
+        'contact_info', 'summary', 'experience', 'work_experience', 
+        'education', 'skills', 'technical_skills', 'projects', 
+        'additional_sections'
+      ].includes(key)) {
+        continue;
+      }
+      
+      // Add any array sections directly to the result
+      if (Array.isArray(value) && value.length > 0) {
+        result[key] = value;
+      }
+      // If it's an object, check if it should be treated as a section
+      else if (typeof value === 'object' && value !== null && Object.keys(value).length > 0) {
+        result[key] = value;
+      }
+    }
     
     // Log the structured data
-    console.log("Parsed resume data:", JSON.stringify(resumeData).substring(0, 200) + "...");
+    console.log("Parsed resume data:", JSON.stringify(result).substring(0, 200) + "...");
     
-    return resumeData;
+    return result as ResumeData;
   } catch (error) {
     console.error("Error parsing VLM Run response:", error);
     return defaultResume;

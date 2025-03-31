@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { CheckIcon, ClipboardCopy } from "lucide-react";
 
 interface ResumeSectionProps {
   title: string;
@@ -471,6 +472,115 @@ export function ResumeSection({ title, sectionId, content }: ResumeSectionProps)
       );
     }
     
+    // For array sections: display as bullet points
+    if (Array.isArray(content)) {
+      return (
+        <div className="text-sm text-gray-700">
+          <ul className="list-disc pl-5 space-y-2">
+            {content.map((item: any, index: number) => {
+              // If item is a string, render directly
+              if (typeof item === 'string') {
+                return <li key={index}>{item}</li>;
+              }
+              
+              // If item is an object, try to extract common fields
+              if (typeof item === 'object' && item !== null) {
+                // Try to find a title/name property
+                const title = 
+                  item.title || 
+                  item.name || 
+                  item.position || 
+                  item.topic || 
+                  item.header || 
+                  '';
+                
+                // Try to find a description property
+                let description = '';
+                if (Array.isArray(item.description)) {
+                  description = item.description.join(', ');
+                } else if (typeof item.description === 'string') {
+                  description = item.description;
+                }
+                
+                // Try to find a date range
+                const dateRange = [];
+                if (item.date) dateRange.push(item.date);
+                if (item.startDate || item.start_date) dateRange.push(item.startDate || item.start_date);
+                if (item.endDate || item.end_date) {
+                  dateRange.push(' - ');
+                  dateRange.push(item.endDate || item.end_date);
+                } else if (item.isCurrent || item.is_current) {
+                  dateRange.push(' - Present');
+                }
+                
+                // Try to find a location
+                const location = item.location || '';
+                
+                // Combine components
+                const parts = [];
+                if (title) parts.push(<span key="title" className="font-medium">{title}</span>);
+                if (dateRange.length > 0) parts.push(<span key="date" className="text-gray-500 ml-2">{dateRange.join('')}</span>);
+                if (location) parts.push(<span key="location" className="ml-2">{location}</span>);
+                if (description) parts.push(<div key="desc" className="mt-1">{description}</div>);
+                
+                // If we found any recognizable content
+                if (parts.length > 0) {
+                  return <li key={index} className="mb-2">{parts}</li>;
+                }
+                
+                // Otherwise display the whole object as JSON
+                return (
+                  <li key={index}>
+                    <pre className="text-xs bg-gray-50 p-2 rounded">{JSON.stringify(item, null, 2)}</pre>
+                  </li>
+                );
+              }
+              
+              // Fallback
+              return <li key={index}>{String(item)}</li>;
+            })}
+          </ul>
+        </div>
+      );
+    }
+    
+    // For object sections not handled above
+    if (typeof content === 'object' && content !== null) {
+      return (
+        <div className="text-sm text-gray-700 space-y-2">
+          {Object.entries(content).map(([key, value]) => {
+            // Skip empty values
+            if (!value || 
+                (typeof value === 'string' && value.trim() === '') || 
+                (Array.isArray(value) && value.length === 0)) {
+              return null;
+            }
+            
+            // Format the key name
+            const formattedKey = key
+              .replace(/_/g, ' ')
+              .replace(/([A-Z])/g, ' $1')
+              .replace(/^./, str => str.toUpperCase());
+            
+            // Render arrays with commas
+            let formattedValue;
+            if (Array.isArray(value)) {
+              formattedValue = value.join(', ');
+            } else {
+              formattedValue = String(value);
+            }
+            
+            return (
+              <div key={key} className="flex">
+                <span className="font-medium w-36">{formattedKey}:</span>
+                <span>{formattedValue}</span>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
+    
     // Default fallback to JSON representation
     return <pre className="text-sm text-gray-700">{JSON.stringify(content, null, 2)}</pre>;
   };
@@ -483,23 +593,19 @@ export function ResumeSection({ title, sectionId, content }: ResumeSectionProps)
           variant="outline"
           size="sm"
           onClick={handleCopy}
-          className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-primary"
+          className="inline-flex items-center px-2.5 py-1.5 border border-gray-300 text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-primary transition-colors duration-200"
         >
-          <svg
-            className="h-4 w-4 mr-1"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
-            ></path>
-          </svg>
-          {isCopied ? "Copied!" : "Copy"}
+          {isCopied ? (
+            <>
+              <CheckIcon className="h-4 w-4 mr-1 text-green-500" />
+              <span className="text-green-600">Copied!</span>
+            </>
+          ) : (
+            <>
+              <ClipboardCopy className="h-4 w-4 mr-1" />
+              <span>Copy</span>
+            </>
+          )}
         </Button>
       </div>
       <div className="p-4">

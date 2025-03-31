@@ -58,11 +58,13 @@ export interface ResumeData {
   contact: ContactInfo;
   summary: string;
   experience: Experience[];
-  education: Education[];
+  education?: Education[];
   skills: Skills;
   projects: Project[];
   workExperience?: WorkExperience[];
   additionalSections?: AdditionalSections;
+  // Allow dynamically added sections in VLM response
+  [key: string]: any;
 }
 
 // Define database tables
