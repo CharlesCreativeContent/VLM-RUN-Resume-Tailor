@@ -2,6 +2,54 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ResumeData, Experience, Education, Project } from '@shared/schema';
 
 /**
+ * Ask a question about a resume and get an AI-generated answer
+ * @param resume Resume data
+ * @param question User's question about the resume
+ * @param apiKey Gemini API key
+ * @returns AI-generated answer to the question
+ */
+export async function askResumeQuestion(
+  resume: ResumeData,
+  question: string,
+  apiKey: string
+): Promise<string> {
+  try {
+    console.log("Processing resume question with Gemini");
+    
+    // Initialize Gemini client
+    const genAI = new GoogleGenerativeAI(apiKey);
+    // Use gemini-1.0-pro (Flash) to avoid rate limits
+    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
+    
+    // Format resume data for the prompt
+    const resumeJson = JSON.stringify(resume, null, 2);
+    
+    // Create the prompt
+    const prompt = `
+    I have a resume in JSON format:
+    
+    ${resumeJson}
+    
+    Based on this resume, please answer the following question:
+    
+    "${question}"
+    
+    If the format is not specified, please provide your answer in a clear, star-format highlighting the most relevant experience and qualifications from the resume that relate to the question.
+    `;
+    
+    // Generate response
+    const result = await model.generateContent(prompt);
+    const response = result.response;
+    const text = response.text();
+    
+    return text;
+  } catch (error) {
+    console.error("Error answering resume question:", error);
+    throw error;
+  }
+}
+
+/**
  * Tailor a resume to a job posting using Gemini API by updating each section individually
  * @param resume Original resume data
  * @param jobDetails Job posting details

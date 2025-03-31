@@ -15,6 +15,7 @@ export default function Home() {
   const [originalResume, setOriginalResume] = useState<ResumeData | null>(null);
   const [tailoredResume, setTailoredResume] = useState<ResumeData | null>(null);
   const [loadingStep, setLoadingStep] = useState<LoadingStep>("idle");
+  const [geminiApiKey, setGeminiApiKey] = useState<string>("");
 
   // Reset to initial form state
   const handleRestart = () => {
@@ -44,6 +45,7 @@ export default function Home() {
               setOriginalResume={setOriginalResume}
               setTailoredResume={setTailoredResume}
               setCurrentView={setCurrentView}
+              setGeminiApiKey={setGeminiApiKey}
             />
           )}
 
@@ -67,7 +69,8 @@ export default function Home() {
           {!isLoading && !error && currentView === "results" && tailoredResume && (
             <ResultsSection 
               tailoredResume={tailoredResume} 
-              onRestart={handleRestart} 
+              onRestart={handleRestart}
+              geminiApiKey={geminiApiKey}
             />
           )}
         </main>

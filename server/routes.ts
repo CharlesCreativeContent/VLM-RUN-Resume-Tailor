@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import multer from "multer";
 import { parseResume } from "./services/vlmrun";
 import { fetchJobDetails } from "./services/jobFetcher";
-import { tailorResume } from "./services/gemini";
+import { tailorResume, askResumeQuestion } from "./services/gemini";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -90,6 +90,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error("Error tailoring resume:", error);
       return res.status(500).json({
         message: error instanceof Error ? error.message : "Failed to tailor resume",
+      });
+    }
+  });
+  
+  // Answer questions about the resume with Gemini
+  app.post("/api/resume/question", async (req: Request, res: Response) => {
+    try {
+      const { resume, question, geminiApiKey } = req.body;
+      
+      if (!resume) {
+        return res.status(400).json({ message: "Resume data is required" });
+      }
+      
+      if (!question) {
+        return res.status(400).json({ message: "Question is required" });
+      }
+      
+      if (!geminiApiKey) {
+        return res.status(400).json({ message: "Gemini API key is required" });
+      }
+
+      // Get answer using Gemini
+      const answer = await askResumeQuestion(resume, question, geminiApiKey);
+      console.log("Question answered successfully");
+      
+      return res.status(200).json({ answer });
+    } catch (error) {
+      console.error("Error answering question:", error);
+      return res.status(500).json({
+        message: error instanceof Error ? error.message : "Failed to answer question",
       });
     }
   });

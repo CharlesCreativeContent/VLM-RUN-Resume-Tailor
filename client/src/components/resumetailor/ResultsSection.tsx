@@ -1,10 +1,15 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ResumeSection } from "./ResumeSection";
 import { ResumeData } from "@shared/schema";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ResultsSectionProps {
   tailoredResume: ResumeData;
   onRestart: () => void;
+  geminiApiKey?: string;
 }
 
 // Mapping for section names to make them more readable
@@ -43,7 +48,39 @@ const sectionTitles: Record<string, string> = {
   volunteer_experience: "Volunteer Experience"
 };
 
-export function ResultsSection({ tailoredResume, onRestart }: ResultsSectionProps) {
+export function ResultsSection({ tailoredResume, onRestart, geminiApiKey }: ResultsSectionProps) {
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState<string | null>(null);
+
+  const askQuestionMutation = useMutation({
+    mutationFn: async (data: { resume: ResumeData, question: string, geminiApiKey: string }) => {
+      return apiRequest("POST", '/api/resume/question', data);
+    },
+    onSuccess: (data: any) => {
+      setAnswer(data.answer);
+    },
+    onError: (error) => {
+      console.error("Error asking question:", error);
+      setAnswer("Sorry, I couldn't process your question. Please try again.");
+    }
+  });
+
+  const handleAskQuestion = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!question.trim()) return;
+    
+    if (!geminiApiKey) {
+      setAnswer("Error: Please provide a Gemini API key to ask questions.");
+      return;
+    }
+    
+    askQuestionMutation.mutate({
+      resume: tailoredResume,
+      question: question.trim(),
+      geminiApiKey
+    });
+  };
+
   const handleDownload = () => {
     const dataStr = JSON.stringify(tailoredResume, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
@@ -96,23 +133,51 @@ export function ResultsSection({ tailoredResume, onRestart }: ResultsSectionProp
 
   return (
     <section>
-      <div className="mb-6 flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-gray-800">Your Tailored Resume</h2>
-        <div className="flex space-x-3">
-          <Button
-            variant="outline"
-            onClick={onRestart}
-            className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-          >
-            Start Over
-          </Button>
-          <Button
-            onClick={handleDownload}
-            className="inline-flex items-center px-3 py-1.5 bg-secondary text-white text-sm font-medium rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
-          >
-            Download JSON
-          </Button>
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-semibold text-gray-800">Ask Questions to Your Tailored Resume</h2>
+          <div className="flex space-x-3">
+            <Button
+              variant="outline"
+              onClick={onRestart}
+              className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+            >
+              Start Over
+            </Button>
+            <Button
+              onClick={handleDownload}
+              className="inline-flex items-center px-3 py-1.5 bg-secondary text-white text-sm font-medium rounded hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
+            >
+              Download JSON
+            </Button>
+          </div>
         </div>
+        
+        <form onSubmit={handleAskQuestion} className="mb-4">
+          <div className="flex gap-3">
+            <Input
+              type="text"
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Ask a question about this resume (e.g., 'What are the key skills for a Developer Relations role?')"
+              className="flex-1"
+            />
+            <Button 
+              type="submit"
+              disabled={askQuestionMutation.isPending || !question.trim()}
+              className="bg-primary text-white hover:bg-primary/90"
+            >
+              {askQuestionMutation.isPending ? "Asking..." : "Ask"}
+            </Button>
+          </div>
+        </form>
+        
+        {answer && (
+          <div className="mb-6 mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
+            <h3 className="text-base font-medium mb-2">Answer:</h3>
+            <div className="text-sm whitespace-pre-line">{answer}</div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-6">
