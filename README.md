@@ -41,10 +41,10 @@ Follow these instructions to set up and run the project locally.
    yarn install
    ```
 
-- 🏃‍♂️ Running the Application
-To start the application in development mode:
+4. 🏃‍♂️ Running the Application
+   To start the application in development mode:
 
-Using npm or yarn:
+   Using npm or yarn:
 
    ```bash
    npm run dev
@@ -52,22 +52,26 @@ Using npm or yarn:
    yarn dev
    ```
 
-The application will be running at:
-http://localhost:3000
+   The application will be running at:
+   localhost:3000
 
 ## 🗂 Project Structure
-client: Contains the front-end code of the application.
-server: Holds the back-end code, including API endpoints and server configurations.
-shared: Includes shared utilities and components used by both client and server.
+Client: Contains the front-end code of the application.
+
+Server: Holds the back-end code, including API endpoints and server configurations.
+
+Shared: Includes shared utilities and components used by both client and server.
 
 ## ⚙️ Configuration
 Tailwind CSS settings: tailwind.config.ts
+
 Vite build configuration: vite.config.ts
 
 Adjust these as needed for your own development requirements.
 
 ## 🤝 Contributing
 Contributions are welcome!
+
 Please fork the repository and submit a pull request with your improvements or suggestions.
 
 ## 📄 License
