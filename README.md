@@ -33,29 +33,22 @@ cd VLM-RUN-Resume-Tailor
 
 3. **Install Dependencies:**
 
-Using npm:
+Using npm or yarn:
 
 ```bash
 npm install
-```
-Or using yarn:
 
-```bash
 yarn install
 ```
 
 - 🏃‍♂️ Running the Application
 To start the application in development mode:
 
-Using npm:
+Using npm or yarn:
 
 ```bash
 npm run dev
-```
 
-Or using yarn:
-
-```bash
 yarn dev
 ```
 
