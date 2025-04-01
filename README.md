@@ -27,30 +27,30 @@ Follow these instructions to set up and run the project locally.
 
 2. **Navigate to the Project Directory:**
 
-```bash
-cd VLM-RUN-Resume-Tailor
-```
+   ```bash
+   cd VLM-RUN-Resume-Tailor
+   ```
 
 3. **Install Dependencies:**
 
-Using npm or yarn:
+   Using npm or yarn:
 
-```bash
-npm install
+   ```bash
+   npm install
 
-yarn install
-```
+   yarn install
+   ```
 
 - 🏃‍♂️ Running the Application
 To start the application in development mode:
 
 Using npm or yarn:
 
-```bash
-npm run dev
+   ```bash
+   npm run dev
 
-yarn dev
-```
+   yarn dev
+   ```
 
 The application will be running at:
 http://localhost:3000
