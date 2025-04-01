@@ -1,6 +1,6 @@
 # VLM-RUN-Resume-Tailor
 
-**VLM-RUN-Resume-Tailor** is a web application designed to assist users in tailoring their resumes to specific job descriptions, enhancing their chances of securing desired positions.
+VLM-RUN-Resume-Tailor** is a web application designed to assist users in tailoring their resumes to specific job descriptions, enhancing their chances of securing desired positions.
 
 ## ✨ Features
 
@@ -56,16 +56,16 @@ Follow these instructions to set up and run the project locally.
    localhost:3000
 
 ## 🗂 Project Structure
-Client: Contains the front-end code of the application.
+**Client:** Contains the front-end code of the application.
 
-Server: Holds the back-end code, including API endpoints and server configurations.
+**Server:** Holds the back-end code, including API endpoints and server configurations.
 
-Shared: Includes shared utilities and components used by both client and server.
+**Shared:** Includes shared utilities and components used by both client and server.
 
 ## ⚙️ Configuration
-Tailwind CSS settings: tailwind.config.ts
+Tailwind CSS settings: **tailwind.config.ts**
 
-Vite build configuration: vite.config.ts
+Vite build configuration: **vite.config.ts**
 
 Adjust these as needed for your own development requirements.
 
